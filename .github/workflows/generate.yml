@@ -1,0 +1,25 @@
+name: Generate Video
+
+on:
+  push:
+    paths:
+      - "data_berita.txt"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run generator
+        run: python videogen_beta.py
+      - name: Upload output
+        uses: actions/upload-artifact@v3
+        with:
+          name: videos
+          path: "video_*.mp4"
