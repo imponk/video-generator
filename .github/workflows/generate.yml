@@ -8,23 +8,30 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
+      # 1️⃣ Ambil semua file dari repo kamu
       - uses: actions/checkout@v4
 
+      # 2️⃣ Siapkan Python versi 3.11
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # 3️⃣ Install semua library dari requirements.txt
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # 4️⃣ Install ffmpeg (dibutuhkan oleh MoviePy untuk ekspor video)
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
+      # 5️⃣ Jalankan script pembuat video
       - name: Run generator
         run: python videogen_beta.py
 
+      # 6️⃣ Upload hasil video (.mp4) ke tab Actions → Artifacts
       - name: Upload output
         uses: actions/upload-artifact@v4
         with:
