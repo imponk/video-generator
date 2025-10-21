@@ -4,14 +4,16 @@ on:
   push:
     paths:
       - "data_berita.txt"
+      - "videogen_beta.py"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Ambil semua file dari repo kamu
-      - uses: actions/checkout@v4
+      # 1️⃣ Ambil semua file dari repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       # 2️⃣ Siapkan Python versi 3.11
       - name: Setup Python
@@ -19,11 +21,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      # 3️⃣ Install semua library dari requirements.txt
+      # 3️⃣ Install dependensi
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt --no-cache-dir
 
-      # 4️⃣ Install ffmpeg (dibutuhkan oleh MoviePy untuk ekspor video)
+      # 4️⃣ Install ffmpeg (dibutuhkan oleh MoviePy)
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
@@ -32,8 +36,9 @@ jobs:
         run: python videogen_beta.py
 
       # 6️⃣ Upload hasil video (.mp4) ke tab Actions → Artifacts
-      - name: Upload output
+      - name: Upload output videos
         uses: actions/upload-artifact@v4
         with:
           name: videos
-          path: "video_*.mp4"
+          path: |
+            video_*.mp4
