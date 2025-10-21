@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt --no-cache-dir
 
-      # 4️⃣ Install ffmpeg (dibutuhkan oleh MoviePy)
+      # 4️⃣ Install ffmpeg (untuk MoviePy)
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
@@ -35,10 +35,15 @@ jobs:
       - name: Run generator
         run: python videogen_beta.py
 
-      # 6️⃣ Upload hasil video (.mp4) ke tab Actions → Artifacts
+      # 6️⃣ Buat nama file artifact unik berdasarkan waktu
+      - name: Generate artifact name
+        id: vars
+        run: echo "name=videos_$(date +'%Y-%m-%d_%H-%M')" >> $GITHUB_OUTPUT
+
+      # 7️⃣ Upload hasil video (.mp4)
       - name: Upload output videos
         uses: actions/upload-artifact@v4
         with:
-          name: videos
+          name: ${{ steps.vars.outputs.name }}
           path: |
             video_*.mp4
