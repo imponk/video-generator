@@ -1,6 +1,6 @@
 from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np, os, math, sys
+import numpy as np, os, math
 
 VIDEO_SIZE = (720, 1280)
 BG_COLOR = (0, 0, 0)
@@ -14,26 +14,6 @@ FONTS = {
 }
 
 OVERLAY_FILE = "semangat.png"
-
-
-# ---------- CEK SUMBER FILE ----------
-def cek_file(path):
-    """Cek apakah file ada, kalau tidak tampilkan peringatan."""
-    if not os.path.exists(path):
-        print(f"⚠️  [PERINGATAN] File tidak ditemukan: {path}")
-        return False
-    return True
-
-
-def safe_font(path, size):
-    """Gunakan font default kalau font utama tidak ditemukan."""
-    if cek_file(path):
-        try:
-            return ImageFont.truetype(path, size)
-        except OSError:
-            print(f"⚠️  [PERINGATAN] Font '{path}' rusak atau tidak bisa dibuka.")
-    print(f"➡️  Menggunakan font default (DejaVuSans) sebagai pengganti.")
-    return ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size)
 
 
 # ---------- UTILITAS ----------
@@ -84,7 +64,7 @@ def frames_to_clip(frames_np):
     return concatenate_videoclips(parts, method="compose")
 
 
-# ---------- FADE KIRI → KANAN ----------
+# ---------- EASING ----------
 def ease_out(t):
     return 1 - pow(1 - t, 3)
 
@@ -104,28 +84,45 @@ def render_wipe_layer(layer, t):
 def render_opening(judul_txt, subjudul_txt, fonts):
     dur = durasi_judul(judul_txt, subjudul_txt)
     total_frames = int(FPS * dur)
-    static_frames = int(FPS * 0.2)
+    static_frames = int(FPS * 0.1)
     fade_frames = int(FPS * 0.7)
     margin_x = 70
 
-    font_judul = safe_font(fonts["judul"], 54)
-    font_sub = safe_font(fonts["subjudul"], 28)
+    try:
+        font_judul = ImageFont.truetype(fonts["judul"], 54)
+        font_sub = ImageFont.truetype(fonts["subjudul"], 28)
+    except:
+        font_judul = ImageFont.load_default()
+        font_sub = ImageFont.load_default()
 
     wrapped_judul = smart_wrap(judul_txt, font_judul, VIDEO_SIZE[0])
     wrapped_sub = smart_wrap(subjudul_txt, font_sub, VIDEO_SIZE[0]) if subjudul_txt else None
 
     judul_h = sum(font_judul.getbbox(line)[3] for line in wrapped_judul.split("\n"))
-    y_judul = int(VIDEO_SIZE[1] * 0.60)
-    y_sub = y_judul + judul_h + 16 if wrapped_sub else None
+    if wrapped_sub:
+        sub_lines = wrapped_sub.split("\n")
+        jarak_vertikal = 16  # sedikit lebih renggang agar seimbang
+        y_judul = int(VIDEO_SIZE[1] * 0.60)
+        y_sub = y_judul + judul_h + jarak_vertikal
+    else:
+        y_judul = int(VIDEO_SIZE[1] * 0.60)
+        y_sub = None
 
     frames = []
     for i in range(total_frames):
-        t = 0.0 if i < static_frames else min(1.0, (i - static_frames) / float(fade_frames))
+        if i < static_frames:
+            t = 0.0
+        elif i < static_frames + fade_frames:
+            t = (i - static_frames) / float(fade_frames)
+        else:
+            t = 1.0
+
         frame = Image.new("RGBA", VIDEO_SIZE, BG_COLOR + (255,))
         layer = Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0))
         make_text_frame(layer, wrapped_judul, font_judul, (margin_x, y_judul))
         if wrapped_sub:
             make_text_frame(layer, wrapped_sub, font_sub, (margin_x, y_sub))
+
         visible = render_wipe_layer(layer, t)
         frame = Image.alpha_composite(frame, visible)
         frames.append(np.array(frame.convert("RGB")))
@@ -139,7 +136,11 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
     fade_frames = min(18, total_frames)
     margin_x = 70
 
-    font = safe_font(font_path, font_size)
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+    except:
+        font = ImageFont.load_default()
+
     wrapped = smart_wrap(text, font, VIDEO_SIZE[0])
     lines = wrapped.split("\n")
 
@@ -157,7 +158,10 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
 
     frames = []
     for i in range(total_frames):
-        t = 1.0 if not anim else min(1.0, i / float(fade_frames))
+        if not anim:
+            t = 1.0
+        else:
+            t = min(1.0, i / float(fade_frames))
         frame = Image.new("RGBA", VIDEO_SIZE, BG_COLOR + (255,))
         layer = Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0))
         make_text_frame(layer, wrapped, font, (margin_x, y_pos))
@@ -176,61 +180,70 @@ def render_penutup(dur=3.0):
 
 # ---------- OVERLAY ----------
 def add_overlay(base_clip):
-    if not cek_file(OVERLAY_FILE):
-        print("⚠️  [PERINGATAN] semangat.png tidak ditemukan. Video tanpa overlay.")
+    if not os.path.exists(OVERLAY_FILE):
         return base_clip
     overlay = ImageClip(OVERLAY_FILE, duration=base_clip.duration)
     return CompositeVideoClip([base_clip, overlay], size=VIDEO_SIZE)
 
 
-# ---------- UTAMA ----------
-def buat_video(data):
-    opening = render_opening(data.get("Judul", ""), data.get("Subjudul", ""), FONTS)
+# ---------- PARSER ----------
+def baca_data_berita(file_path):
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.read().split("\n")
 
-    # isi otomatis berdasarkan paragraf
-    isi_list = [p.strip() for p in data.get("Isi", "").split("\n\n") if p.strip()]
-    clips = [opening]
-
-    for i, paragraf in enumerate(isi_list, start=1):
-        dur = durasi_otomatis(paragraf)
-        clips.append(render_text_block(paragraf, FONTS["isi"], 34, dur))
-
-    clips.append(render_penutup(3.0))
-    final = concatenate_videoclips(clips, method="compose")
-    result = add_overlay(final)
-    result.write_videofile("video_01.mp4", fps=FPS, codec="libx264", audio=False)
-
-
-# ---------- CONTOH INPUT ----------
-if __name__ == "__main__":
-    # Baca data dari file data_berita.txt
-    if not os.path.exists("data_berita.txt"):
-        sys.exit("❌ File data_berita.txt tidak ditemukan.")
-
-    with open("data_berita.txt", "r", encoding="utf-8") as f:
-        lines = f.read().strip().splitlines()
-
+    data_list = []
     data = {"Judul": "", "Subjudul": "", "Isi": ""}
-    current_key = None
+    mode = None
 
     for line in lines:
-        if line.startswith("Judul:"):
-            current_key = "Judul"
-            data["Judul"] = line.replace("Judul:", "").strip()
-        elif line.startswith("Subjudul:"):
-            current_key = "Subjudul"
-            data["Subjudul"] = line.replace("Subjudul:", "").strip()
-        elif line.strip() == "":
+        line = line.strip()
+        if not line:
             continue
+        if line.startswith("---"):
+            if data["Judul"]:
+                data_list.append(data)
+                data = {"Judul": "", "Subjudul": "", "Isi": ""}
+                mode = None
+            continue
+        if line.startswith("Judul:"):
+            data["Judul"] = line.replace("Judul:", "").strip()
+            mode = "judul"
+        elif line.startswith("Subjudul:"):
+            data["Subjudul"] = line.replace("Subjudul:", "").strip()
+            mode = "subjudul"
         else:
-            if current_key in ("Judul", "Subjudul"):
-                data[current_key] += "\n" + line.strip()
+            if mode == "judul" and not data["Subjudul"] and not data["Isi"]:
+                data["Judul"] += " " + line.strip()
+            elif mode == "subjudul" and not data["Isi"]:
+                data["Subjudul"] += " " + line.strip()
             else:
-                data["Isi"] += "\n" + line.strip()
+                if data["Isi"]:
+                    data["Isi"] += " " + line.strip()
+                else:
+                    data["Isi"] = line.strip()
+            mode = "isi"
 
-    print("📘 Membuat video dengan data:")
-    print(f"  Judul: {data['Judul'][:60]}")
-    print(f"  Subjudul: {data['Subjudul'][:60]}")
-    print(f"  Isi: {len(data['Isi'].split())} kata")
+    if data["Judul"]:
+        data_list.append(data)
+    return data_list
 
-    buat_video(data)
+
+# ---------- UTAMA ----------
+def buat_video(data, output_name="video_01.mp4"):
+    opening = render_opening(data.get("Judul", ""), data.get("Subjudul", ""), FONTS)
+    isi_clip = render_text_block(data.get("Isi", ""), FONTS["isi"], 34, durasi_otomatis(data.get("Isi", "")))
+    penutup = render_penutup(2.5)
+
+    final = concatenate_videoclips([opening, isi_clip, penutup], method="compose")
+    result = add_overlay(final)
+    result.write_videofile(output_name, fps=FPS, codec="libx264", audio=False)
+
+
+# ---------- EKSEKUSI ----------
+if __name__ == "__main__":
+    berita_list = baca_data_berita("data_berita.txt")
+    for i, data in enumerate(berita_list, start=1):
+        output_file = f"video_{i:02d}.mp4"
+        print(f"🎬 Membuat {output_file} ...")
+        buat_video(data, output_file)
+    print("✅ Semua video selesai dibuat.")
