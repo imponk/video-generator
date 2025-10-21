@@ -8,12 +8,12 @@ TEXT_COLOR = (255, 255, 255, 255)
 FPS = 24
 
 FONTS = {
-    "judul": "DMSerifDisplay-Regular.ttf",
-    "subjudul": "ProximaNova-Regular.ttf",
-    "isi": "Poppins-Bold.ttf",
+    "judul": "assets/DMSerifDisplay-Regular.ttf",
+    "subjudul": "assets/ProximaNova-Regular.ttf",
+    "isi": "assets/Poppins-Bold.ttf",
 }
 
-OVERLAY_FILE = "semangat.png"
+OVERLAY_FILE = "assets/semangat.png"
 
 def durasi_otomatis(teks, min_dur=3, max_dur=6):
     if not teks:
