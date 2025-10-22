@@ -1,6 +1,6 @@
 from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np, os, math, re
+import numpy as np, os, math
 
 VIDEO_SIZE = (720, 1280)
 BG_COLOR = (0, 0, 0)
@@ -46,23 +46,13 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
     if not text:
         return ""
     paragraphs = text.split("\n")
-    lines = []
+    raw_lines = []
+    
     for para in paragraphs:
         para = para.strip()
         if not para:
-            lines.append("")
+            raw_lines.append("")
             continue
-        
-        para = re.sub(r" (Rp) ", " \1\u00A0", para)
-        if para.startswith("Rp "):
-            para = "Rp\u00A0" + para[3:]
-        
-        para = re.sub(r" (ke|di|Ke|Di) ", " \1\u00A0", para)
-        
-        if para.startswith("Ke "):
-            para = "Ke\u00A0" + para[3:]
-        if para.startswith("Di "):
-            para = "Di\u00A0" + para[3:]
 
         words = para.split()
         line = ""
@@ -70,13 +60,37 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
             test_line = line + word + " "
             test_width = font.getbbox(test_line)[2] 
             if test_width + margin_left + margin_right > max_width:
-                lines.append(line.strip())
+                raw_lines.append(line.strip())
                 line = word + " "
             else:
                 line = test_line
         if line:
-            lines.append(line.strip())
-    return "\n".join(lines)
+            raw_lines.append(line.strip())
+
+    cleaned_lines = []
+    for i in range(len(raw_lines)):
+        
+        if i == len(raw_lines) - 1:
+            cleaned_lines.append(raw_lines[i])
+            break
+
+        current_line = raw_lines[i]
+        words = current_line.split()
+
+        if not words:
+            cleaned_lines.append(current_line)
+            continue
+
+        last_word = words[-1]
+        
+        if last_word.lower() in ['rp', 'ke', 'di']:
+            line_without_last_word = " ".join(words[:-1])
+            cleaned_lines.append(line_without_last_word)
+            raw_lines[i+1] = last_word + " " + raw_lines[i+1]
+        else:
+            cleaned_lines.append(current_line)
+
+    return "\n".join(cleaned_lines)
 
 def make_text_frame(base_img, text, font, pos, alpha=255):
     draw = ImageDraw.Draw(base_img)
