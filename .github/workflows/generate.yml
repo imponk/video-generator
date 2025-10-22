@@ -16,46 +16,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Siapkan Python versi 3.11
+      # 2️⃣ Setup Python 3.11
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3️⃣ Install dependensi dari requirements.txt
-      - name: Install dependencies
+      # 3️⃣ Install pip & dependencies langsung (tanpa cache)
+      - name: Install dependencies (forced)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt --no-cache-dir
+          pip install moviepy==2.1.1 Pillow==10.2.0 numpy==1.26.4 imageio[ffmpeg]==2.34.0 --no-cache-dir
+          echo "✅ Dependencies berhasil diinstall!"
 
-      # 4️⃣ Verifikasi dependensi utama (MoviePy, Pillow, dll)
-      - name: Verify Python packages
+      # 4️⃣ Verifikasi MoviePy sudah terpasang
+      - name: Verify MoviePy
         run: |
-          echo "📦 Mengecek apakah dependensi sudah terpasang..."
-          pip list | grep moviepy || (echo "❌ MoviePy belum terinstal dengan benar!" && exit 1)
-          pip list | grep Pillow || (echo "❌ Pillow belum terinstal dengan benar!" && exit 1)
-          pip list | grep numpy || (echo "❌ NumPy belum terinstal dengan benar!" && exit 1)
-          pip list | grep imageio || (echo "❌ imageio belum terinstal dengan benar!" && exit 1)
-          echo "✅ Semua paket terinstal!"
+          python -m pip show moviepy || (echo "❌ MoviePy gagal terinstall" && exit 1)
+          python -c "import moviepy.editor; print('🎬 MoviePy import OK!')"
 
-      # 5️⃣ Install ffmpeg untuk MoviePy
+      # 5️⃣ Install ffmpeg
       - name: Install ffmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      # 6️⃣ Jalankan script pembuat video
+      # 6️⃣ Jalankan generator video
       - name: Run video generator
-        run: |
-          echo "🎬 Menjalankan videogen_beta.py..."
-          python videogen_beta.py
+        run: python videogen_beta.py
 
-      # 7️⃣ Buat nama artifact unik berdasarkan waktu
+      # 7️⃣ Buat nama hasil unik
       - name: Generate artifact name
         id: vars
         run: echo "name=videos_$(date +'%Y-%m-%d_%H-%M')" >> $GITHUB_OUTPUT
 
-      # 8️⃣ Upload hasil video (.mp4) ke tab Actions → Artifacts
+      # 8️⃣ Upload hasil video
       - name: Upload generated videos
         uses: actions/upload-artifact@v4
         with:
