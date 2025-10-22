@@ -53,11 +53,11 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
             lines.append("")
             continue
         
-        para = re.sub(r" (Rp) ", r" \1\u00A0", para)
+        para = re.sub(r" (Rp) ", " \1\u00A0", para)
         if para.startswith("Rp "):
             para = "Rp\u00A0" + para[3:]
         
-        para = re.sub(r" (ke|di|Ke|Di) ", r" \1\u00A0", para)
+        para = re.sub(r" (ke|di|Ke|Di) ", " \1\u00A0", para)
         
         if para.startswith("Ke "):
             para = "Ke\u00A0" + para[3:]
