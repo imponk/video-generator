@@ -1,12 +1,3 @@
-# ==========================================================
-# videogen_beta.py (Update: Jarak Baris Isi)
-# ==========================================================
-# ✅ Kalkulasi layout 100% akurat (multiline_textbbox)
-# ✅ Font 'isi' otomatis mengecil jika terlalu panjang
-# ✅ Logika 'offset' (naik ke atas) diterapkan setelah font mengecil
-# ✅ Jarak antar baris 'isi' diatur ke 6px (lebih rapat)
-# ==========================================================
-
 from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np, os, math
@@ -25,14 +16,28 @@ FONTS = {
 
 OVERLAY_FILE = "semangat.png"
 
-# ==========================================================
 # ---------- UTILITAS ----------
-# ==========================================================
 def durasi_otomatis(teks, min_dur=3, max_dur=6):
+    """
+    Durasi tampil teks versi berita cepat:
+    - Pendek: sekitar 3–4 detik
+    - Sedang: sekitar 4–5 detik
+    - Panjang: maksimal 6 detik
+    """
     if not teks:
         return min_dur
+
     kata = len(teks.split())
-    durasi = max(min_dur, min((kata / 3.5), max_dur))
+
+    if kata <= 15:
+        durasi = 3.5
+    elif kata <= 30:
+        durasi = 4.5
+    elif kata <= 50:
+        durasi = 5.5
+    else:
+        durasi = 6.0  # batas maksimal untuk naskah panjang
+
     return round(durasi, 1)
 
 def durasi_judul(judul, subjudul):
@@ -81,9 +86,7 @@ def frames_to_clip(frames_np):
     parts = [ImageClip(f, duration=1.0 / FPS) for f in frames_np]
     return concatenate_videoclips(parts, method="compose")
 
-# ==========================================================
 # ---------- EASING DAN REVEAL ----------
-# ==========================================================
 def ease_out(t):
     return 1 - pow(1 - t, 3)
 
@@ -97,9 +100,7 @@ def render_wipe_layer(layer, t):
     draw.rectangle([0, 0, width, VIDEO_SIZE[1]], fill=255)
     return Image.composite(layer, Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0)), mask)
 
-# ==========================================================
 # ---------- BLOK: JUDUL + SUBJUDUL (Akurat) ----------
-# ==========================================================
 def render_opening(judul_txt, subjudul_txt, fonts):
     dur = durasi_judul(judul_txt, subjudul_txt)
     total_frames = int(FPS * dur)
@@ -153,9 +154,7 @@ def render_opening(judul_txt, subjudul_txt, fonts):
         frames.append(np.array(frame.convert("RGB")))
     return frames_to_clip(frames)
 
-# ==========================================================
 # ---------- BLOK: ISI (JARAK BARIS LEBIH RAPAT: 6px) ----------
-# ==========================================================
 def render_text_block(text, font_path, font_size, dur, anim=True):
     total_frames = int(FPS * dur)
     fade_frames = min(18, total_frames)
@@ -172,7 +171,7 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
     font = ImageFont.truetype(font_path, font_size)
     wrapped = smart_wrap(text, font, VIDEO_SIZE[0])
 
-    # [DIUBAH] Ukur tinggi teks dengan jarak baris 6px
+    # [PERBAIKAN] Ukur tinggi teks dengan jarak baris 6px
     text_bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=6)
     text_height = text_bbox[3] - text_bbox[1]
     bottom_y = base_y + text_height
@@ -183,7 +182,7 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
         font = ImageFont.truetype(font_path, font_size_new)
         
         wrapped = smart_wrap(text, font, VIDEO_SIZE[0])
-        # [DIUBAH] Hitung ulang dengan jarak baris 6px
+        # [PERBAIKAN] Hitung ulang dengan jarak baris 6px
         text_bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=6)
         text_height = text_bbox[3] - text_bbox[1]
         bottom_y = base_y + text_height
@@ -204,7 +203,7 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
         layer = Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0))
         
         draw_real = ImageDraw.Draw(layer)
-        # [DIUBAH] Gambar teks dengan jarak baris 6px
+        # [PERBAIKAN] Gambar teks dengan jarak baris 6px
         draw_real.multiline_text((margin_x, y_pos), wrapped, font=font, fill=TEXT_COLOR, align="left", spacing=6)
 
         visible = render_wipe_layer(layer, t)
@@ -213,9 +212,7 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
         
     return frames_to_clip(frames)
 
-# ==========================================================
 # ---------- PENUTUP & OVERLAY ----------
-# ==========================================================
 def render_penutup(dur=3.0):
     total_frames = int(FPS * dur)
     frames = [np.array(Image.new("RGB", VIDEO_SIZE, BG_COLOR)) for _ in range(total_frames)]
@@ -227,9 +224,7 @@ def add_overlay(base_clip):
     overlay = ImageClip(OVERLAY_FILE, duration=base_clip.duration)
     return CompositeVideoClip([base_clip, overlay], size=VIDEO_SIZE)
 
-# ==========================================================
 # ---------- PEMBACA FILE BERITA (Fleksibel) ----------
-# ==========================================================
 def baca_semua_berita(file_path):
     """Parser fleksibel untuk file berita:
     - Mendukung multiline Judul & Subjudul tanpa baris kosong
@@ -289,23 +284,28 @@ def baca_semua_berita(file_path):
 
     return semua_data
 
-# ==========================================================
-# ---------- PEMBUATAN VIDEO ----------
-# ==========================================================
+# ---------- PEMBUATAN VIDEO (DENGAN JEDA 1 DETIK) ----------
 def buat_video(data, index=None):
     judul = data.get("Judul", "")
     print(f"▶ Membuat video: {judul}")
     opening = render_opening(judul, data.get("Subjudul", ""), FONTS)
 
     isi_clips = []
-    for i in range(1, 30):
-        key = f"Isi_{i}"
-        if key in data and data[key].strip():
-            teks = data[key]
-            dur = durasi_otomatis(teks)
-            # Panggil dengan font_size default (34)
-            clip = render_text_block(teks, FONTS["isi"], 34, dur)
-            isi_clips.append(clip)
+    # Dapatkan semua kunci 'Isi' yang valid
+    isi_data = [f"Isi_{i}" for i in range(1, 30) if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
+    # Buat klip jeda 1 detik
+    jeda = render_penutup(1.0) 
+
+    for idx, key in enumerate(isi_data):
+        teks = data[key]
+        dur = durasi_otomatis(teks) # Pakai durasi baru
+        # Panggil 'render_text_block' yang sudah cerdas
+        clip = render_text_block(teks, FONTS["isi"], 34, dur)
+        isi_clips.append(clip)
+        
+        # Tambahkan jeda JIKA ini BUKAN klip isi terakhir
+        if idx < len(isi_data) - 1:
+            isi_clips.append(jeda)
 
     penutup = render_penutup(3.0)
     final = concatenate_videoclips([opening] + isi_clips + [penutup], method="compose")
@@ -315,9 +315,7 @@ def buat_video(data, index=None):
     result.write_videofile(filename, fps=FPS, codec="libx264", audio=False)
     print(f"✅ Video selesai: {filename}\n")
 
-# ==========================================================
-# ---------- MAIN ----------
-# ==========================================================
+# ---------- MAIN (DENGAN VALIDASI FILE) ----------
 if __name__ == "__main__":
     FILE_INPUT = "data_berita.txt"
     if not os.path.exists(FILE_INPUT):
@@ -332,7 +330,6 @@ if __name__ == "__main__":
             
     if not os.path.exists(OVERLAY_FILE):
         print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan, video akan dibuat tanpa overlay.")
-
 
     semua = baca_semua_berita(FILE_INPUT)
     if not semua:
