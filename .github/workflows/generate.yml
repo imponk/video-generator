@@ -31,11 +31,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libfreetype6-dev
 
-      # 4. Install library Python dari requirements.txt
+# 4. Install library Python (Paksa Reinstall)
       - name: 4. Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          # --force-reinstall: Hapus yang lama (jika ada) & instal ulang
+          # --no-cache-dir: Jangan gunakan cache pip
+          pip install --force-reinstall --no-cache-dir -r requirements.txt
 
       # (!!!) TAMBAHKAN LANGKAH DIAGNOSTIK INI (!!!)
       # Memeriksa library yang terinstal TEPAT SEBELUM skrip jalan
