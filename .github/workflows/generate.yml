@@ -22,40 +22,58 @@ jobs:
         with:
           python-version: "3.11"
 
-      # 3️⃣ Install dependensi di environment Python aktif
-      - name: Install dependencies (fix path)
+      # 3️⃣ Debug environment path
+      - name: Debug Python path
+        run: |
+          which python
+          python --version
+          echo "PYTHONPATH saat ini:"
+          python -c "import sys; print(sys.path)"
+
+      # 4️⃣ Install dependensi secara eksplisit
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install moviepy==2.1.1 Pillow==10.2.0 numpy==1.26.4 imageio[ffmpeg]==2.34.0 --no-cache-dir
-          python -m pip show moviepy Pillow numpy imageio
+          echo "✅ Dependencies selesai diinstall"
 
-      # 4️⃣ Pastikan modul MoviePy benar-benar bisa diimport
-      - name: Verify import
+      # 5️⃣ Tambahkan manual site-packages ke PYTHONPATH
+      - name: Fix site-packages path
+        run: |
+          PYTHON_SITE=$(python -c "import site; print(site.getsitepackages()[0])")
+          echo "Python site-packages: $PYTHON_SITE"
+          echo "PYTHONPATH=$PYTHON_SITE" >> $GITHUB_ENV
+          echo "✅ PYTHONPATH sudah diperbaiki"
+
+      # 6️⃣ Tes apakah MoviePy bisa diimport
+      - name: Verify MoviePy import
         run: |
           python - <<'PYCODE'
+          import sys, os
+          print("🧭 sys.path:", sys.path)
           try:
               import moviepy.editor as m
               print("🎬 MoviePy berhasil diimport!")
           except Exception as e:
               print("❌ Gagal import MoviePy:", e)
-              import sys; sys.exit(1)
+              sys.exit(1)
           PYCODE
 
-      # 5️⃣ Install ffmpeg
+      # 7️⃣ Install ffmpeg
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      # 6️⃣ Jalankan script pembuat video
-      - name: Run generator
+      # 8️⃣ Jalankan generator video
+      - name: Jalankan generator
         run: python videogen_beta.py
 
-      # 7️⃣ Buat nama hasil unik
+      # 9️⃣ Buat nama artifact unik
       - name: Generate artifact name
         id: vars
         run: echo "name=videos_$(date +'%Y-%m-%d_%H-%M')" >> $GITHUB_OUTPUT
 
-      # 8️⃣ Upload hasil video
-      - name: Upload generated videos
+      # 🔟 Upload hasil video
+      - name: Upload hasil video
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.vars.outputs.name }}
