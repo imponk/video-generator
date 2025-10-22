@@ -171,7 +171,9 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
     margin_x = 70
 
     base_y = int(VIDEO_SIZE[1] * 0.60)
-    margin_bawah_logo = 140
+    
+    # [PERBAIKAN 1] Beri jarak aman lebih besar dari logo
+    margin_bawah_logo = 170
     batas_bawah_aman = VIDEO_SIZE[1] - margin_bawah_logo
 
     dummy_img = Image.new("RGBA", (1, 1))
@@ -189,14 +191,14 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
         font = ImageFont.truetype(font_path, font_size_new)
         
         wrapped = smart_wrap(text, font, VIDEO_SIZE[0])
-        text_bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=6)
+        text_bbox = draw.multiline_textbbox((0, 0), wrapped, font=f, spacing=6)
         text_height = text_bbox[3] - text_bbox[1]
         bottom_y = base_y + text_height
 
     if bottom_y > batas_bawah_aman:
         kelebihan = bottom_y - batas_bawah_aman
-        # [PERBAIKAN] Geser ke atas 100% dari 'kelebihan', maks 200px
-        offset = min(kelebihan, 200) 
+        # [PERBAIKAN 2] Geser ke atas 100% + 10px padding
+        offset = min(kelebihan + 10, 220) 
         y_pos = base_y - offset
     else:
         y_pos = base_y
