@@ -2,7 +2,6 @@ from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np, os, math
 
-# ---------- KONFIGURASI ----------
 VIDEO_SIZE = (720, 1280)
 BG_COLOR = (0, 0, 0)
 TEXT_COLOR = (255, 255, 255, 255)
@@ -16,14 +15,7 @@ FONTS = {
 
 OVERLAY_FILE = "semangat.png"
 
-# ---------- UTILITAS ----------
 def durasi_otomatis(teks, min_dur=3, max_dur=6):
-    """
-    Durasi tampil teks versi berita cepat:
-    - Pendek: sekitar 3–4 detik
-    - Sedang: sekitar 4–5 detik
-    - Panjang: maksimal 6 detik
-    """
     if not teks:
         return min_dur
 
@@ -36,7 +28,7 @@ def durasi_otomatis(teks, min_dur=3, max_dur=6):
     elif kata <= 50:
         durasi = 5.5
     else:
-        durasi = 6.0  # batas maksimal untuk naskah panjang
+        durasi = 6.0
 
     return round(durasi, 1)
 
@@ -51,7 +43,6 @@ def durasi_judul(judul, subjudul):
     return 4.0
 
 def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
-    """Membungkus teks tapi tetap menghormati enter manual."""
     if not text:
         return ""
     paragraphs = text.split("\n")
@@ -65,7 +56,6 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
         line = ""
         for word in words:
             test_line = line + word + " "
-            # Gunakan 'getbbox' untuk lebar
             test_width = font.getbbox(test_line)[2] 
             if test_width + margin_left + margin_right > max_width:
                 lines.append(line.strip())
@@ -79,14 +69,12 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
 def make_text_frame(base_img, text, font, pos, alpha=255):
     draw = ImageDraw.Draw(base_img)
     fill = (TEXT_COLOR[0], TEXT_COLOR[1], TEXT_COLOR[2], alpha)
-    # [DIUBAH] Jarak baris Judul/Subjudul diubah ke 4px agar lebih rapat
     draw.multiline_text(pos, text, font=font, fill=fill, align="left", spacing=4)
 
 def frames_to_clip(frames_np):
     parts = [ImageClip(f, duration=1.0 / FPS) for f in frames_np]
     return concatenate_videoclips(parts, method="compose")
 
-# ---------- EASING DAN REVEAL ----------
 def ease_out(t):
     return 1 - pow(1 - t, 3)
 
@@ -100,7 +88,6 @@ def render_wipe_layer(layer, t):
     draw.rectangle([0, 0, width, VIDEO_SIZE[1]], fill=255)
     return Image.composite(layer, Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0)), mask)
 
-# ---------- BLOK: JUDUL + SUBJUDUL (Jarak Rapat: 4px) ----------
 def render_opening(judul_txt, subjudul_txt, fonts):
     dur = durasi_judul(judul_txt, subjudul_txt)
     total_frames = int(FPS * dur)
@@ -119,11 +106,9 @@ def render_opening(judul_txt, subjudul_txt, fonts):
 
     y_judul = int(VIDEO_SIZE[1] * 0.60)
     
-    # [DIUBAH] Kalkulasi posisi judul (spacing 4px)
     judul_bbox = draw.multiline_textbbox((margin_x, y_judul), wrapped_judul, font=font_judul, spacing=4)
     
     if wrapped_sub:
-        # [DIUBAH] Kalkulasi tinggi subjudul (spacing 4px)
         sub_bbox = draw.multiline_textbbox((0, 0), wrapped_sub, font=font_sub, spacing=4)
         tinggi_sub = sub_bbox[3] - sub_bbox[1]
         
@@ -154,7 +139,6 @@ def render_opening(judul_txt, subjudul_txt, fonts):
         frames.append(np.array(frame.convert("RGB")))
     return frames_to_clip(frames)
 
-# ---------- BLOK: ISI (Jarak Baris Rapat: 6px) ----------
 def render_text_block(text, font_path, font_size, dur, anim=True):
     total_frames = int(FPS * dur)
     fade_frames = min(18, total_frames)
@@ -167,27 +151,22 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
     dummy_img = Image.new("RGBA", (1, 1))
     draw = ImageDraw.Draw(dummy_img)
 
-    # --- PERCOBAAN 1: UKURAN FONT DEFAULT ---
     font = ImageFont.truetype(font_path, font_size)
     wrapped = smart_wrap(text, font, VIDEO_SIZE[0])
 
-    # [PERBAIKAN] Ukur tinggi teks dengan jarak baris 6px
     text_bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=6)
     text_height = text_bbox[3] - text_bbox[1]
     bottom_y = base_y + text_height
 
-    # --- PERCOBAAN 2: KECILKAN FONT JIKA OVERFLOW ---
     if bottom_y > batas_bawah_aman:
         font_size_new = max(30, int(font_size * 0.94))
         font = ImageFont.truetype(font_path, font_size_new)
         
         wrapped = smart_wrap(text, font, VIDEO_SIZE[0])
-        # [PERBAIKAN] Hitung ulang dengan jarak baris 6px
         text_bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=6)
         text_height = text_bbox[3] - text_bbox[1]
         bottom_y = base_y + text_height
 
-    # --- KALKULASI POSISI Y FINAL ---
     if bottom_y > batas_bawah_aman:
         kelebihan = bottom_y - batas_bawah_aman
         offset = min(int(kelebihan * 0.6), 120) 
@@ -195,7 +174,6 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
     else:
         y_pos = base_y
 
-    # --- RENDER FRAME ---
     frames = []
     for i in range(total_frames):
         t = 1.0 if not anim else min(1.0, i / float(fade_frames))
@@ -203,7 +181,6 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
         layer = Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0))
         
         draw_real = ImageDraw.Draw(layer)
-        # [PERBAIKAN] Gambar teks dengan jarak baris 6px
         draw_real.multiline_text((margin_x, y_pos), wrapped, font=font, fill=TEXT_COLOR, align="left", spacing=6)
 
         visible = render_wipe_layer(layer, t)
@@ -212,7 +189,6 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
         
     return frames_to_clip(frames)
 
-# ---------- PENUTUP & OVERLAY ----------
 def render_penutup(dur=3.0):
     total_frames = int(FPS * dur)
     frames = [np.array(Image.new("RGB", VIDEO_SIZE, BG_COLOR)) for _ in range(total_frames)]
@@ -224,13 +200,7 @@ def add_overlay(base_clip):
     overlay = ImageClip(OVERLAY_FILE, duration=base_clip.duration)
     return CompositeVideoClip([base_clip, overlay], size=VIDEO_SIZE)
 
-# ---------- PEMBACA FILE BERITA (Fleksibel) ----------
 def baca_semua_berita(file_path):
-    """Parser fleksibel untuk file berita:
-    - Mendukung multiline Judul & Subjudul tanpa baris kosong
-    - Tidak sensitif huruf besar-kecil
-    - Paragraf isi otomatis dipisah 2x Enter
-    """
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
@@ -284,26 +254,21 @@ def baca_semua_berita(file_path):
 
     return semua_data
 
-# ---------- PEMBUATAN VIDEO (DENGAN JEDA 1 DETIK) ----------
 def buat_video(data, index=None):
     judul = data.get("Judul", "")
     print(f"▶ Membuat video: {judul}")
     opening = render_opening(judul, data.get("Subjudul", ""), FONTS)
 
     isi_clips = []
-    # Dapatkan semua kunci 'Isi' yang valid
     isi_data = [f"Isi_{i}" for i in range(1, 30) if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
-    # Buat klip jeda 1 detik
     jeda = render_penutup(1.0) 
 
     for idx, key in enumerate(isi_data):
         teks = data[key]
-        dur = durasi_otomatis(teks) # Pakai durasi baru
-        # Panggil 'render_text_block' yang sudah cerdas
+        dur = durasi_otomatis(teks)
         clip = render_text_block(teks, FONTS["isi"], 34, dur)
         isi_clips.append(clip)
         
-        # Tambahkan jeda JIKA ini BUKAN klip isi terakhir
         if idx < len(isi_data) - 1:
             isi_clips.append(jeda)
 
@@ -315,14 +280,12 @@ def buat_video(data, index=None):
     result.write_videofile(filename, fps=FPS, codec="libx264", audio=False)
     print(f"✅ Video selesai: {filename}\n")
 
-# ---------- MAIN (DENGAN VALIDASI FILE) ----------
 if __name__ == "__main__":
     FILE_INPUT = "data_berita.txt"
     if not os.path.exists(FILE_INPUT):
         print(f"❌ File '{FILE_INPUT}' tidak ditemukan!")
         exit(1)
     
-    # Validasi file font dan overlay
     for font_file in FONTS.values():
         if not os.path.exists(font_file):
             print(f"❌ File Font '{font_file}' tidak ditemukan!")
