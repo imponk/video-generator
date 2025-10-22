@@ -1,3 +1,12 @@
+# ==========================================================
+# videogen_beta.py (Versi Perbaikan Akurasi Layout)
+# ==========================================================
+# ✅ Menggunakan 'multiline_textbbox' untuk kalkulasi
+#     tinggi teks yang 100% akurat.
+# ✅ Posisi subjudul dijamin presisi di bawah judul.
+# ✅ Deteksi 'overflow' teks isi menjadi lebih reliabel.
+# ==========================================================
+
 from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np, os, math
@@ -63,7 +72,8 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
 def make_text_frame(base_img, text, font, pos, alpha=255):
     draw = ImageDraw.Draw(base_img)
     fill = (TEXT_COLOR[0], TEXT_COLOR[1], TEXT_COLOR[2], alpha)
-    draw.multiline_text(pos, text, font=font, fill=fill, align="left")
+    # Gunakan 'spacing=8' agar konsisten dengan logika 'render_text_block'
+    draw.multiline_text(pos, text, font=font, fill=fill, align="left", spacing=8)
 
 def frames_to_clip(frames_np):
     parts = [ImageClip(f, duration=1.0 / FPS) for f in frames_np]
@@ -86,7 +96,7 @@ def render_wipe_layer(layer, t):
     return Image.composite(layer, Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0)), mask)
 
 # ==========================================================
-# ---------- BLOK: JUDUL + SUBJUDUL ----------
+# ---------- BLOK: JUDUL + SUBJUDUL (PERBAIKAN) ----------
 # ==========================================================
 def render_opening(judul_txt, subjudul_txt, fonts):
     dur = durasi_judul(judul_txt, subjudul_txt)
@@ -95,22 +105,33 @@ def render_opening(judul_txt, subjudul_txt, fonts):
     fade_frames = int(FPS * 0.8)
     margin_x = 70
 
+    # Buat dummy canvas untuk kalkulasi bbox yang akurat
+    dummy_img = Image.new("RGBA", (1, 1))
+    draw = ImageDraw.Draw(dummy_img)
+
     font_judul = ImageFont.truetype(fonts["judul"], 54)
     font_sub = ImageFont.truetype(fonts["subjudul"], 28)
 
     wrapped_judul = smart_wrap(judul_txt, font_judul, VIDEO_SIZE[0])
     wrapped_sub = smart_wrap(subjudul_txt, font_sub, VIDEO_SIZE[0]) if subjudul_txt else None
 
-    judul_h = sum(font_judul.getbbox(line)[3] for line in wrapped_judul.split("\n"))
-
+    # Tentukan Y awal
+    y_judul = int(VIDEO_SIZE[1] * 0.60)
+    
+    # Kalkulasi posisi bawah judul yang AKURAT
+    judul_bbox = draw.multiline_textbbox((margin_x, y_judul), wrapped_judul, font=font_judul, spacing=8)
+    # judul_bbox[3] adalah koordinat Y ter-bawah dari judul
+    
     if wrapped_sub:
-        sub_lines = wrapped_sub.split("\n")
-        tinggi_sub = sum(font_sub.getbbox(line)[3] for line in sub_lines)
-        jarak_vertikal = max(18, int(tinggi_sub * 0.35))  # spacing lebih seimbang
-        y_judul = int(VIDEO_SIZE[1] * 0.60)
-        y_sub = y_judul + judul_h + jarak_vertikal
+        # Kalkulasi tinggi subjudul yang AKURAT
+        sub_bbox = draw.multiline_textbbox((0, 0), wrapped_sub, font=font_sub, spacing=8)
+        tinggi_sub = sub_bbox[3] - sub_bbox[1] # Ini tinggi akurat
+        
+        jarak_vertikal = max(18, int(tinggi_sub * 0.35))
+        
+        # Posisikan Y subjudul persis di bawah Y ter-bawah judul
+        y_sub = judul_bbox[3] + jarak_vertikal 
     else:
-        y_judul = int(VIDEO_SIZE[1] * 0.60)
         y_sub = None
 
     frames = []
@@ -136,7 +157,7 @@ def render_opening(judul_txt, subjudul_txt, fonts):
     return frames_to_clip(frames)
 
 # ==========================================================
-# ---------- BLOK: ISI ----------
+# ---------- BLOK: ISI (PERBAIKAN) ----------
 # ==========================================================
 def render_text_block(text, font_path, font_size, dur, anim=True):
     total_frames = int(FPS * dur)
@@ -148,10 +169,15 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
 
     font = ImageFont.truetype(font_path, font_size)
     wrapped = smart_wrap(text, font, VIDEO_SIZE[0])
-    lines = [l for l in wrapped.split("\n") if l.strip()]
 
-    line_heights = [font.getbbox(line)[3] for line in lines]
-    text_height = sum(line_heights) + (len(lines) - 1) * 8
+    # Buat dummy canvas untuk kalkulasi bbox yang akurat
+    dummy_img = Image.new("RGBA", (1, 1))
+    draw = ImageDraw.Draw(dummy_img)
+
+    # Kalkulasi tinggi teks yang AKURAT
+    # 'spacing=8' ditambahkan agar sesuai dengan logika lama Anda
+    text_bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=8)
+    text_height = text_bbox[3] - text_bbox[1] # Ini tinggi akurat
 
     bottom_y = base_y + text_height
     batas_bawah_aman = VIDEO_SIZE[1] - margin_bawah_logo
@@ -176,7 +202,7 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
 
 # ==========================================================
 # ---------- PENUTUP & OVERLAY ----------
-# ==========================================================
+# =================================B=========================
 def render_penutup(dur=3.0):
     total_frames = int(FPS * dur)
     frames = [np.array(Image.new("RGB", VIDEO_SIZE, BG_COLOR)) for _ in range(total_frames)]
