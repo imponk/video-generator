@@ -1,16 +1,14 @@
-name: 🚀 Generate Video
+name: 🚀 Buat Video (Manual)
 
 on:
-  push:
-    paths:
-      # Memicu action HANYA jika file-file penting ini berubah
-      - "data_berita.txt"
-      - "videogen_beta.py"
-      - ".github/workflows/generate.yml"
-      - "requirements.txt"
-  
-  # Memungkinkan Anda menjalankan action ini secara manual dari tab "Actions"
+  # Ini adalah "Frontend" Anda:
+  # Membuat tombol "Run workflow" di tab Actions
   workflow_dispatch:
+    inputs:
+      data_berita:
+        description: 'Tempel (paste) seluruh naskah data_berita.txt di sini'
+        required: true
+        type: string # 'string' memberi kotak teks besar
 
 jobs:
   build_video:
@@ -21,40 +19,40 @@ jobs:
       - name: 1. Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Menyiapkan lingkungan Python 3.11
-      - name: 2. Setup Python 3.11
+      # 2. Ini adalah "Backend" Anda:
+      #    Mengambil teks dari input dan membuat file data_berita.txt
+      - name: 2. Buat data_berita.txt dari Input Form
+        run: echo "${{ inputs.data_berita }}" > data_berita.txt
+
+      # 3. Menyiapkan lingkungan Python 3.11
+      - name: 3. Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip" # Menyimpan cache dependensi agar berjalan lebih cepat
+          cache: "pip"
 
-      # 3. [INI SOLUSINYA] Install library sistem untuk render font
-      # Pillow (PIL) membutuhkan 'libfreetype' untuk memuat file .ttf
-      - name: 3. Install System Dependencies (For Fonts)
+      # 4. Install library sistem untuk FONT
+      - name: 4. Install System Dependencies (For Fonts)
         run: |
           sudo apt-get update
           sudo apt-get install -y libfreetype6-dev
 
-      # 4. Install library Python dari requirements.txt
-      # (Ini sudah termasuk 'imageio[ffmpeg]', jadi FFmpeg ter-install otomatis)
-      - name: 4. Install Python Dependencies
+      # 5. Install library Python dari requirements.txt
+      - name: 5. Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          echo "---  libraries terinstall: ---"
-          pip freeze | grep -E "moviepy|Pillow|numpy|imageio"
 
-      # 5. Menjalankan skrip Python Anda
-      - name: 5. Run Video Generation Script
+      # 6. Menjalankan "Mesin" Python Anda
+      - name: 6. Run Video Generation Script
         run: |
           echo "🚀 Mulai menjalankan 'videogen_beta.py'..."
           python videogen_beta.py
           echo "✅ Skrip selesai dijalankan."
 
-      # 6. Memeriksa apakah file video benar-benar dibuat
-      - name: 6. Verify Video Output
+      # 7. Memeriksa apakah file video benar-benar dibuat
+      - name: 7. Verify Video Output
         run: |
-          echo "--- Mengecek hasil file: ---"
           if ! ls output_video_*.mp4 1> /dev/null 2>&1; then
             echo "❌ GAGAL: Tidak ada file 'output_video_*.mp4' yang ditemukan!"
             exit 1
@@ -62,11 +60,11 @@ jobs:
           echo "👍 File video ditemukan:"
           ls -lh output_video_*.mp4
 
-      # 7. Mengunggah file video yang sudah jadi sebagai 'artifact'
-      - name: 7. Upload Video Artifacts
-        if: success() # Hanya berjalan jika langkah sebelumnya sukses
+      # 8. Mengunggah file video untuk di-download
+      - name: 8. Upload Video Artifacts
+        if: success() 
         uses: actions/upload-artifact@v4
         with:
           name: generated-videos
           path: output_video_*.mp4
-          retention-days: 7 # Simpan hasil video selama 7 hari
+          retention-days: 7
