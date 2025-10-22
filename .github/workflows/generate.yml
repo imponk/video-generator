@@ -6,6 +6,7 @@ on:
       - "data_berita.txt"
       - "videogen_beta.py"
       - ".github/workflows/generate.yml"
+      - "requirements.txt" # Tambahkan ini agar update library juga memicu action
 
 jobs:
   build:
@@ -23,33 +24,32 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      # 3️⃣ Install dependensi dengan versi yang kamu pakai di lokal
-      - name: Install dependencies
+      # 3️⃣ (KRUSIAL) Install dependensi sistem untuk FONT
+      - name: Install system dependencies for Font Rendering
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install moviepy==2.1.1 Pillow==10.2.0 numpy==1.26.4 imageio[ffmpeg]==2.34.0 --no-cache-dir
+          sudo apt-get update
+          sudo apt-get install -y libfreetype6-dev
+
+      # 4️⃣ Install dependensi Python dari file (lebih rapi & efisien)
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
           echo "✅ Library siap dipakai:"
           pip list | grep -E "moviepy|Pillow|numpy|imageio"
 
-      # 4️⃣ Pastikan ffmpeg aktif (dibutuhkan MoviePy)
-      - name: Install ffmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          ffmpeg -version | head -n 1
-
-      # 5️⃣ Jalankan generator persis seperti di lokal
+      # 5️⃣ Jalankan generator video
       - name: Run video generator
         run: |
-          echo "🚀 Menjalankan videogen_beta.py di environment selaras"
+          echo "🚀 Menjalankan videogen_beta.py..."
           python videogen_beta.py
-          echo "🎬 Semua video selesai dibuat!"
-          ls -lh output_video_*.mp4 || echo "⚠️ Tidak ada video ditemukan"
+          echo "🎬 Proses selesai!"
+          ls -lh output_video_*.mp4 || echo "⚠️ Tidak ada video yang dihasilkan."
 
       # 6️⃣ Upload hasil ke tab Actions → Artifacts
       - name: Upload hasil video
+        if: success() # Hanya upload jika langkah sebelumnya berhasil
         uses: actions/upload-artifact@v4
         with:
           name: videos_output
-          path: |
-            output_video_*.mp4
+          path: output_video_*.mp4
