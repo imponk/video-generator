@@ -195,7 +195,6 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
 
     if bottom_y > batas_bawah_aman:
         kelebihan = bottom_y - batas_bawah_aman
-        # [DIUBAH] Batas geser ke atas diperbesar menjadi 160px
         offset = min(int(kelebihan * 0.6), 160) 
         y_pos = base_y - offset
     else:
@@ -273,7 +272,8 @@ def baca_semua_berita(file_path):
         if isi_raw:
             isi_text = "\n".join(isi_raw).strip()
             paragraf_list = [p.strip() for p in isi_text.split("\n\n") if p.strip()]
-            for idx, p in enumerate(paragg_list, start=1):
+            # [PERBAIKAN] Mengganti 'paragg_list' menjadi 'paragraf_list'
+            for idx, p in enumerate(paragraf_list, start=1):
                 data[f"Isi_{idx}"] = p
 
         if data:
