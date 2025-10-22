@@ -1,52 +1,55 @@
-name: Generate Video
+name: Generate Video (Environment Synced)
 
 on:
   push:
     paths:
       - "data_berita.txt"
       - "videogen_beta.py"
-      - "requirements.txt"
+      - ".github/workflows/generate.yml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repo ke runner
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Pastikan versi Python sama seperti lokal
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
-      - name: Setup virtualenv and install dependencies
+      # 3️⃣ Install dependensi dengan versi yang kamu pakai di lokal
+      - name: Install dependencies
         run: |
-          echo "🧰 Membuat virtual environment..."
-          python -m venv venv
-          ./venv/bin/python -m pip install --upgrade pip setuptools wheel
-          ./venv/bin/python -m pip install moviepy==2.1.1 Pillow==10.2.0 numpy==1.26.4 imageio[ffmpeg]==2.34.0 --no-cache-dir
-          ./venv/bin/python -m pip show moviepy
-          echo "✅ Dependensi terinstal dengan benar!"
+          python -m pip install --upgrade pip setuptools wheel
+          pip install moviepy==2.1.1 Pillow==10.2.0 numpy==1.26.4 imageio[ffmpeg]==2.34.0 --no-cache-dir
+          echo "✅ Library siap dipakai:"
+          pip list | grep -E "moviepy|Pillow|numpy|imageio"
 
+      # 4️⃣ Pastikan ffmpeg aktif (dibutuhkan MoviePy)
       - name: Install ffmpeg
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-          echo "🎞️ FFmpeg siap digunakan!"
+          ffmpeg -version | head -n 1
 
-      - name: Run generator
+      # 5️⃣ Jalankan generator persis seperti di lokal
+      - name: Run video generator
         run: |
-          echo "🚀 Menjalankan videogen_beta.py dengan venv..."
-          ./venv/bin/python videogen_beta.py
+          echo "🚀 Menjalankan videogen_beta.py di environment selaras"
+          python videogen_beta.py
+          echo "🎬 Semua video selesai dibuat!"
+          ls -lh output_video_*.mp4 || echo "⚠️ Tidak ada video ditemukan"
 
-      - name: Generate artifact name
-        id: vars
-        run: echo "name=videos_$(date +'%Y-%m-%d_%H-%M')" >> $GITHUB_OUTPUT
-
+      # 6️⃣ Upload hasil ke tab Actions → Artifacts
       - name: Upload hasil video
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.vars.outputs.name }}
+          name: videos_output
           path: |
-            video_*.mp4
+            output_video_*.mp4
