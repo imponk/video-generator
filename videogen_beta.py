@@ -287,7 +287,7 @@ def buat_video(data, index=None):
 
     isi_clips = []
     isi_data = [f"Isi_{i}" for i in range(1, 30) if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
-    jeda = render_penutup(1.0) 
+    jeda = render_penutup(0.7) 
 
     for idx, key in enumerate(isi_data):
         teks = data[key]
