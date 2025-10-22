@@ -12,17 +12,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Ambil semua file dari repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Siapkan Python versi 3.11
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3️⃣ Buat virtual environment dan install semua dependensi di dalamnya
       - name: Setup virtualenv and install dependencies
         run: |
           echo "🧰 Membuat virtual environment..."
@@ -32,25 +29,21 @@ jobs:
           ./venv/bin/python -m pip show moviepy
           echo "✅ Dependensi terinstal dengan benar!"
 
-      # 4️⃣ Install ffmpeg
       - name: Install ffmpeg
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
           echo "🎞️ FFmpeg siap digunakan!"
 
-      # 5️⃣ Jalankan script videogen_beta.py menggunakan Python dari venv
       - name: Run generator
         run: |
           echo "🚀 Menjalankan videogen_beta.py dengan venv..."
           ./venv/bin/python videogen_beta.py
 
-      # 6️⃣ Buat nama artifact hasil video
       - name: Generate artifact name
         id: vars
         run: echo "name=videos_$(date +'%Y-%m-%d_%H-%M')" >> $GITHUB_OUTPUT
 
-      # 7️⃣ Upload hasil video (.mp4) ke tab Actions → Artifacts
       - name: Upload hasil video
         uses: actions/upload-artifact@v4
         with:
