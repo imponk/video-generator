@@ -1,6 +1,6 @@
 from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np, os, math
+import numpy as np, os, math, re
 
 VIDEO_SIZE = (720, 1280)
 BG_COLOR = (0, 0, 0)
@@ -195,7 +195,8 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
 
     if bottom_y > batas_bawah_aman:
         kelebihan = bottom_y - batas_bawah_aman
-        offset = min(int(kelebihan * 0.6), 120) 
+        # [DIUBAH] Batas geser ke atas diperbesar menjadi 160px
+        offset = min(int(kelebihan * 0.6), 160) 
         y_pos = base_y - offset
     else:
         y_pos = base_y
@@ -272,7 +273,7 @@ def baca_semua_berita(file_path):
         if isi_raw:
             isi_text = "\n".join(isi_raw).strip()
             paragraf_list = [p.strip() for p in isi_text.split("\n\n") if p.strip()]
-            for idx, p in enumerate(paragraf_list, start=1):
+            for idx, p in enumerate(paragg_list, start=1):
                 data[f"Isi_{idx}"] = p
 
         if data:
