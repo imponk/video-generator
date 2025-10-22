@@ -37,6 +37,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # (!!!) TAMBAHKAN LANGKAH DIAGNOSTIK INI (!!!)
+      # Memeriksa library yang terinstal TEPAT SEBELUM skrip jalan
+      - name: Verify Installation Before Run
+        run: |
+          echo "--- Python Path ---"
+          which python
+          echo "--- Installed Packages (pip freeze) ---"
+          pip freeze | grep moviepy
+          echo "--- Trying to import moviepy.editor ---"
+          python -c "import moviepy.editor; print('moviepy.editor import successful!')"
+
       # 5. Menjalankan skrip Python Anda
       - name: 5. Run Video Generation Script
         run: python videogen_beta.py
