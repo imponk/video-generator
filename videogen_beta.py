@@ -79,8 +79,8 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
 def make_text_frame(base_img, text, font, pos, alpha=255):
     draw = ImageDraw.Draw(base_img)
     fill = (TEXT_COLOR[0], TEXT_COLOR[1], TEXT_COLOR[2], alpha)
-    # Jarak baris Judul/Subjudul tetap 8px
-    draw.multiline_text(pos, text, font=font, fill=fill, align="left", spacing=8)
+    # [DIUBAH] Jarak baris Judul/Subjudul diubah ke 4px agar lebih rapat
+    draw.multiline_text(pos, text, font=font, fill=fill, align="left", spacing=4)
 
 def frames_to_clip(frames_np):
     parts = [ImageClip(f, duration=1.0 / FPS) for f in frames_np]
@@ -100,7 +100,7 @@ def render_wipe_layer(layer, t):
     draw.rectangle([0, 0, width, VIDEO_SIZE[1]], fill=255)
     return Image.composite(layer, Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0)), mask)
 
-# ---------- BLOK: JUDUL + SUBJUDUL (Akurat) ----------
+# ---------- BLOK: JUDUL + SUBJUDUL (Jarak Rapat: 4px) ----------
 def render_opening(judul_txt, subjudul_txt, fonts):
     dur = durasi_judul(judul_txt, subjudul_txt)
     total_frames = int(FPS * dur)
@@ -119,12 +119,12 @@ def render_opening(judul_txt, subjudul_txt, fonts):
 
     y_judul = int(VIDEO_SIZE[1] * 0.60)
     
-    # Kalkulasi posisi judul (tetap spacing 8px)
-    judul_bbox = draw.multiline_textbbox((margin_x, y_judul), wrapped_judul, font=font_judul, spacing=8)
+    # [DIUBAH] Kalkulasi posisi judul (spacing 4px)
+    judul_bbox = draw.multiline_textbbox((margin_x, y_judul), wrapped_judul, font=font_judul, spacing=4)
     
     if wrapped_sub:
-        # Kalkulasi tinggi subjudul (tetap spacing 8px)
-        sub_bbox = draw.multiline_textbbox((0, 0), wrapped_sub, font=font_sub, spacing=8)
+        # [DIUBAH] Kalkulasi tinggi subjudul (spacing 4px)
+        sub_bbox = draw.multiline_textbbox((0, 0), wrapped_sub, font=font_sub, spacing=4)
         tinggi_sub = sub_bbox[3] - sub_bbox[1]
         
         jarak_vertikal = max(18, int(tinggi_sub * 0.35))
@@ -154,7 +154,7 @@ def render_opening(judul_txt, subjudul_txt, fonts):
         frames.append(np.array(frame.convert("RGB")))
     return frames_to_clip(frames)
 
-# ---------- BLOK: ISI (JARAK BARIS LEBIH RAPAT: 6px) ----------
+# ---------- BLOK: ISI (Jarak Baris Rapat: 6px) ----------
 def render_text_block(text, font_path, font_size, dur, anim=True):
     total_frames = int(FPS * dur)
     fade_frames = min(18, total_frames)
