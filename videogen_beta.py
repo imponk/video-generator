@@ -86,7 +86,6 @@ def smart_wrap(text, font, max_width, margin_left=70, margin_right=90):
         if last_word.lower() in ['rp', 'ke', 'di']:
             line_without_last_word = " ".join(words[:-1])
             cleaned_lines.append(line_without_last_word)
-            # Pastikan baris berikutnya ada sebelum dimodifikasi
             if i + 1 < len(raw_lines):
                  raw_lines[i+1] = last_word + " " + raw_lines[i+1]
         else:
@@ -173,7 +172,7 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
     margin_x = 70
 
     base_y = int(VIDEO_SIZE[1] * 0.60)
-    margin_bawah_logo = 170
+    margin_bawah_logo = 170 # Jarak aman dari bawah (termasuk overlay full screen)
     batas_bawah_aman = VIDEO_SIZE[1] - margin_bawah_logo
 
     dummy_img = Image.new("RGBA", (1, 1))
@@ -223,47 +222,42 @@ def render_penutup(dur=3.0):
     return frames_to_clip(frames)
 
 def add_overlay(base_clip):
+    # --- FUNGSI INI SUDAH DIPERBARUI ---
     if not os.path.exists(OVERLAY_FILE):
         print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan, video akan dibuat tanpa overlay.")
         return base_clip
 
     try:
-        # Muat overlay (resolusi tinggi asli) dengan PIL
+        # Muat overlay (resolusi tinggi asli)
         overlay_pil = Image.open(OVERLAY_FILE).convert("RGBA")
     except Exception as e:
         print(f"❌ Error loading overlay '{OVERLAY_FILE}': {e}")
         return base_clip
 
-    # Tentukan lebar logo KECIL yang Anda inginkan di video (misal 150px)
-    target_width = 150
-    try:
-        # Hitung tinggi secara proporsional
-        w_percent = (target_width / float(overlay_pil.width))
-        target_height = int((float(overlay_pil.height) * float(w_percent)))
-    except ZeroDivisionError:
-         print(f"❌ Error calculating overlay size: Overlay width is zero.")
-         return base_clip # Skip overlay jika lebar asli nol
+    # Sesuaikan ukuran overlay agar sesuai dengan VIDEO_SIZE (720x1280)
+    target_width = VIDEO_SIZE[0]
+    target_height = VIDEO_SIZE[1]
 
     try:
-        # Kecilkan gambar dengan anti-aliasing (Image.LANCZOS)
+        # Resize dengan anti-aliasing berkualitas tinggi
         overlay_pil_resized = overlay_pil.resize((target_width, target_height), Image.LANCZOS)
     except Exception as e:
-        print(f"❌ Error resizing overlay: {e}")
+        print(f"❌ Error resizing overlay to full screen: {e}")
         return base_clip
 
     # Ubah kembali ke ImageClip moviepy
     overlay_clip = ImageClip(np.array(overlay_pil_resized), duration=base_clip.duration)
 
-    # Posisikan di kanan bawah (margin 40px dari kanan & bawah)
-    pos_x = VIDEO_SIZE[0] - target_width - 40
-    pos_y = VIDEO_SIZE[1] - target_height - 40
+    # Posisikan di (0,0) agar memenuhi layar
+    pos_x = 0
+    pos_y = 0
 
     try:
-        # Gabungkan klip
+        # Gabungkan klip (overlay di atas video dasar)
         final_clip = CompositeVideoClip([base_clip, overlay_clip.set_pos((pos_x, pos_y))], size=VIDEO_SIZE)
         return final_clip
     except Exception as e:
-        print(f"❌ Error compositing overlay: {e}")
+        print(f"❌ Error compositing full-screen overlay: {e}")
         return base_clip # Kembalikan klip dasar jika gagal
 
 def baca_semua_berita(file_path):
@@ -348,7 +342,7 @@ def buat_video(data, index=None):
 
         penutup = render_penutup(3.0)
         final = concatenate_videoclips([opening] + isi_clips + [penutup], method="compose")
-        result = add_overlay(final)
+        result = add_overlay(final) # Panggil fungsi overlay yang sudah diperbarui
 
         filename = f"output_video_{index+1 if index is not None else '1'}.mp4"
         result.write_videofile(filename, fps=FPS, codec="libx264", audio=False)
@@ -356,14 +350,12 @@ def buat_video(data, index=None):
 
     except Exception as e:
         print(f"❌ Gagal membuat video untuk '{judul}': {e}")
-        # Tambahkan traceback jika ingin detail error lengkap saat debugging
         # import traceback
         # print(traceback.format_exc())
 
 if __name__ == "__main__":
     FILE_INPUT = "data_berita.txt"
 
-    # Validasi file font dan overlay sebelum memulai
     font_files_ok = True
     for font_file in FONTS.values():
         if not os.path.exists(font_file):
@@ -372,17 +364,17 @@ if __name__ == "__main__":
     if not font_files_ok:
         exit(1)
 
-    overlay_exists = os.path.exists(OVERLAY_FILE)
-    if not overlay_exists:
-         print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan.")
+    # Cek overlay di awal, tapi biarkan add_overlay() menangani jika tidak ada saat runtime
+    if not os.path.exists(OVERLAY_FILE):
+         print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan (akan dilewati saat pembuatan video).")
 
-    semua = baca_semua_berita(FILE_INPUT) # Fungsi baca_semua_berita sudah punya error handling
+    semua = baca_semua_berita(FILE_INPUT)
     if not semua:
         print(f"❌ Tidak ada data berita yang valid di '{FILE_INPUT}'.")
         exit(1)
 
     print(f"Total {len(semua)} video akan dibuat...")
     for i, data in enumerate(semua):
-        buat_video(data, i) # Fungsi buat_video sudah punya error handling per video
+        buat_video(data, i)
 
     print("🎬 Semua video selesai dibuat (atau dilewati jika gagal).")
