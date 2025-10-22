@@ -39,21 +39,6 @@ jobs:
           # --no-cache-dir: Jangan gunakan cache pip
           pip install --force-reinstall --no-cache-dir -r requirements.txt
 
-# (!!!) LANGKAH DIAGNOSTIK BARU (!!!)
-      # Memeriksa lebih detail sebelum skrip jalan
-      - name: Verify Installation Before Run
-        run: |
-          echo "--- Python Path ---"
-          which python
-          echo "--- Installed Packages (pip freeze) ---"
-          pip freeze | grep moviepy
-          echo "--- Python sys.path (tempat Python mencari library) ---"
-          python -c "import sys; print(sys.path)"
-          echo "--- Mencoba import 'moviepy' (dasar) ---"
-          python -c "import moviepy; print('✅ Impor moviepy dasar BERHASIL!')"
-          echo "--- Mencoba import 'moviepy.editor' ---"
-          python -c "import moviepy.editor; print('✅ Impor moviepy.editor BERHASIL!')"
-
       # 5. Menjalankan skrip Python Anda
       - name: 5. Run Video Generation Script
         run: python videogen_beta.py
