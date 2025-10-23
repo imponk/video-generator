@@ -28,7 +28,7 @@ def durasi_otomatis(teks, min_dur=3, max_dur=6):
     elif kata <= 50:
         durasi = 5.5
     else:
-        durasi = 6.0
+        durasi = 7.0
 
     return round(durasi, 1)
 
