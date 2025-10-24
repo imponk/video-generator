@@ -1,3 +1,4 @@
+# Versi ini menggunakan jeda 0.6 detik antar isi
 from moviepy.editor import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np, os, math, re
@@ -15,7 +16,10 @@ FONTS = {
 
 OVERLAY_FILE = "semangat.png"
 
-def durasi_otomatis(teks, min_dur=3, max_dur=6):
+def durasi_otomatis(teks, min_dur=3.5): # Hanya perlu min_dur
+    """
+    Durasi tampil teks versi berita cepat, TAPI naskah panjang sedikit lebih lama.
+    """
     if not teks:
         return min_dur
 
@@ -28,9 +32,9 @@ def durasi_otomatis(teks, min_dur=3, max_dur=6):
     elif kata <= 50:
         durasi = 5.5
     else:
-        durasi = 7.0
+        durasi = 7.0 # Naskah > 50 kata dapat 7 detik
 
-    return round(durasi, 1)
+    return max(min_dur, round(durasi, 1)) # Pastikan tidak < min_dur
 
 def durasi_judul(judul, subjudul):
     panjang = len((judul or "").split()) + len((subjudul or "").split())
@@ -172,7 +176,7 @@ def render_text_block(text, font_path, font_size, dur, anim=True):
     margin_x = 70
 
     base_y = int(VIDEO_SIZE[1] * 0.60)
-    margin_bawah_logo = 170 # Jarak aman dari bawah (termasuk overlay full screen)
+    margin_bawah_logo = 170
     batas_bawah_aman = VIDEO_SIZE[1] - margin_bawah_logo
 
     dummy_img = Image.new("RGBA", (1, 1))
@@ -222,43 +226,36 @@ def render_penutup(dur=3.0):
     return frames_to_clip(frames)
 
 def add_overlay(base_clip):
-    # --- FUNGSI INI SUDAH DIPERBARUI ---
     if not os.path.exists(OVERLAY_FILE):
         print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan, video akan dibuat tanpa overlay.")
         return base_clip
 
     try:
-        # Muat overlay (resolusi tinggi asli)
         overlay_pil = Image.open(OVERLAY_FILE).convert("RGBA")
     except Exception as e:
         print(f"❌ Error loading overlay '{OVERLAY_FILE}': {e}")
         return base_clip
 
-    # Sesuaikan ukuran overlay agar sesuai dengan VIDEO_SIZE (720x1280)
     target_width = VIDEO_SIZE[0]
     target_height = VIDEO_SIZE[1]
 
     try:
-        # Resize dengan anti-aliasing berkualitas tinggi
         overlay_pil_resized = overlay_pil.resize((target_width, target_height), Image.LANCZOS)
     except Exception as e:
         print(f"❌ Error resizing overlay to full screen: {e}")
         return base_clip
 
-    # Ubah kembali ke ImageClip moviepy
     overlay_clip = ImageClip(np.array(overlay_pil_resized), duration=base_clip.duration)
 
-    # Posisikan di (0,0) agar memenuhi layar
     pos_x = 0
     pos_y = 0
 
     try:
-        # Gabungkan klip (overlay di atas video dasar)
         final_clip = CompositeVideoClip([base_clip, overlay_clip.set_pos((pos_x, pos_y))], size=VIDEO_SIZE)
         return final_clip
     except Exception as e:
         print(f"❌ Error compositing full-screen overlay: {e}")
-        return base_clip # Kembalikan klip dasar jika gagal
+        return base_clip
 
 def baca_semua_berita(file_path):
     try:
@@ -329,7 +326,8 @@ def buat_video(data, index=None):
 
         isi_clips = []
         isi_data = [f"Isi_{i}" for i in range(1, 30) if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
-        jeda = render_penutup(0.7)
+        # --- JEDA ANTAR ISI DIUBAH KE 0.6 ---
+        jeda = render_penutup(0.6)
 
         for idx, key in enumerate(isi_data):
             teks = data[key]
@@ -340,9 +338,9 @@ def buat_video(data, index=None):
             if idx < len(isi_data) - 1:
                 isi_clips.append(jeda)
 
-        penutup = render_penutup(3.0)
+        penutup = render_penutup(3.0) # Jeda akhir tetap 3 detik
         final = concatenate_videoclips([opening] + isi_clips + [penutup], method="compose")
-        result = add_overlay(final) # Panggil fungsi overlay yang sudah diperbarui
+        result = add_overlay(final)
 
         filename = f"output_video_{index+1 if index is not None else '1'}.mp4"
         result.write_videofile(filename, fps=FPS, codec="libx264", audio=False)
@@ -364,7 +362,6 @@ if __name__ == "__main__":
     if not font_files_ok:
         exit(1)
 
-    # Cek overlay di awal, tapi biarkan add_overlay() menangani jika tidak ada saat runtime
     if not os.path.exists(OVERLAY_FILE):
          print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan (akan dilewati saat pembuatan video).")
 
