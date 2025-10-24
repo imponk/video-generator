@@ -96,36 +96,100 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
     dur = durasi_judul(judul_txt, subjudul_txt)
     total_frames = int(FPS * dur); static_frames = int(FPS * 0.2); fade_frames = int(FPS * 0.8)
     margin_x = 70
+    margin_bawah_logo = 170
+    batas_bawah_aman = VIDEO_SIZE[1] - margin_bawah_logo
 
     dummy_img = Image.new("RGBA", (1, 1)); draw = ImageDraw.Draw(dummy_img)
-    font_upper = ImageFont.truetype(fonts["upper"], 28) if upper_txt else None
-    font_judul = ImageFont.truetype(fonts["judul"], 60) if judul_txt else None
-    font_sub = ImageFont.truetype(fonts["subjudul"], 28) if subjudul_txt else None
-    if not font_judul: font_judul = ImageFont.truetype(fonts["judul"], 60) # Fallback
-
-    wrapped_upper = smart_wrap(upper_txt, font_upper, VIDEO_SIZE[0]) if font_upper and upper_txt else None
-    wrapped_judul = smart_wrap(judul_txt, font_judul, VIDEO_SIZE[0]) if font_judul and judul_txt else ""
-    wrapped_sub = smart_wrap(subjudul_txt, font_sub, VIDEO_SIZE[0]) if font_sub and subjudul_txt else None
-
+    upper_font_size = 28; judul_font_size = 60; sub_font_size = 28
     spacing_upper_judul = 12; spacing_judul_sub = 16
-    y_start = int(VIDEO_SIZE[1] * 0.60); y_upper = None; y_judul = None; y_sub = None
-    current_y = y_start
 
-    if wrapped_upper:
-        y_upper = current_y
-        upper_bbox = draw.multiline_textbbox((margin_x, y_upper), wrapped_upper, font=font_upper, spacing=4)
-        current_y = upper_bbox[3] + spacing_upper_judul
+    def calculate_layout(current_judul_font_size):
+        font_upper = ImageFont.truetype(fonts["upper"], upper_font_size) if upper_txt else None
+        font_judul = ImageFont.truetype(fonts["judul"], current_judul_font_size) if judul_txt else None
+        font_sub = ImageFont.truetype(fonts["subjudul"], sub_font_size) if subjudul_txt else None
+        if not font_judul: font_judul = ImageFont.truetype(fonts["judul"], current_judul_font_size)
 
-    y_judul = current_y
-    judul_bbox_bottom = y_judul
-    if wrapped_judul:
-        judul_bbox = draw.multiline_textbbox((margin_x, y_judul), wrapped_judul, font=font_judul, spacing=4)
-        judul_bbox_bottom = judul_bbox[3]
-    current_y = judul_bbox_bottom + spacing_judul_sub
+        wrapped_upper = smart_wrap(upper_txt, font_upper, VIDEO_SIZE[0]) if font_upper and upper_txt else None
+        wrapped_judul = smart_wrap(judul_txt, font_judul, VIDEO_SIZE[0]) if font_judul and judul_txt else ""
+        wrapped_sub = smart_wrap(subjudul_txt, font_sub, VIDEO_SIZE[0]) if font_sub and subjudul_txt else None
 
-    if wrapped_sub: y_sub = current_y
+        upper_h = 0; judul_h = 0; sub_h = 0
+        if wrapped_upper:
+            upper_bbox = draw.multiline_textbbox((0, 0), wrapped_upper, font=font_upper, spacing=4)
+            upper_h = upper_bbox[3] - upper_bbox[1]
+        if wrapped_judul:
+            judul_bbox = draw.multiline_textbbox((0, 0), wrapped_judul, font=font_judul, spacing=4)
+            judul_h = judul_bbox[3] - judul_bbox[1]
+        if wrapped_sub:
+            sub_bbox = draw.multiline_textbbox((0, 0), wrapped_sub, font=font_sub, spacing=4)
+            sub_h = sub_bbox[3] - sub_bbox[1]
+
+        total_h = upper_h + judul_h + sub_h
+        if upper_h > 0 and (judul_h > 0 or wrapped_judul): total_h += spacing_upper_judul # Add space if upper exists and judul exists (even if empty)
+        if (judul_h > 0 or wrapped_judul) and sub_h > 0: total_h += spacing_judul_sub # Add space if judul exists and sub exists
+
+
+        y_start = int(VIDEO_SIZE[1] * 0.60); current_y = y_start
+        _y_upper = None; _y_judul = None; _y_sub = None; _bottom_y = y_start
+
+        if wrapped_upper:
+            _y_upper = current_y
+            upper_bbox = draw.multiline_textbbox((margin_x, _y_upper), wrapped_upper, font=font_upper, spacing=4)
+            current_y = upper_bbox[3] + spacing_upper_judul
+            _bottom_y = upper_bbox[3]
+
+        _y_judul = current_y
+        judul_bbox_bottom = _y_judul
+        if wrapped_judul:
+            judul_bbox = draw.multiline_textbbox((margin_x, _y_judul), wrapped_judul, font=font_judul, spacing=4)
+            judul_bbox_bottom = judul_bbox[3]
+            _bottom_y = judul_bbox[3]
+        elif upper_h > 0: # If only upper, bottom is bottom of upper
+             _bottom_y = y_start + upper_h
+        # Add spacing even if judul is empty, but upper exists
+        if upper_h > 0 or wrapped_judul : current_y = judul_bbox_bottom + spacing_judul_sub
+        
+        if wrapped_sub:
+            _y_sub = current_y
+            sub_bbox = draw.multiline_textbbox((margin_x, _y_sub), wrapped_sub, font=font_sub, spacing=4)
+            _bottom_y = sub_bbox[3]
+
+        return {"font_upper": font_upper, "font_judul": font_judul, "font_sub": font_sub,
+                "wrapped_upper": wrapped_upper, "wrapped_judul": wrapped_judul, "wrapped_sub": wrapped_sub,
+                "y_upper": _y_upper, "y_judul": _y_judul, "y_sub": _y_sub,
+                "bottom_y": _bottom_y, "y_start_initial": y_start}
+
+    layout = calculate_layout(judul_font_size); final_y_start = layout["y_start_initial"]
+
+    if layout["bottom_y"] > batas_bawah_aman:
+        new_judul_font_size = max(50, int(judul_font_size * 0.94))
+        #print(f"--- [INFO] Judul opening terlalu panjang, mengecilkan font ke {new_judul_font_size}pt") # Dihapus
+        layout = calculate_layout(new_judul_font_size)
+
+    if layout["bottom_y"] > batas_bawah_aman:
+        kelebihan = layout["bottom_y"] - batas_bawah_aman
+        offset = min(kelebihan + 10, 80)
+        #print(f"--- [INFO] Judul opening masih panjang, menggeser ke atas {offset}px") # Dihapus
+        final_y_start -= offset
+        layout["y_upper"] = final_y_start if layout["wrapped_upper"] else None
+        upper_h_for_shift = 0
+        if layout["wrapped_upper"]:
+             upper_bbox_shift = draw.multiline_textbbox((0,0), layout["wrapped_upper"], font=layout["font_upper"], spacing=4)
+             upper_h_for_shift = upper_bbox_shift[3]-upper_bbox_shift[1]
+        layout["y_judul"] = final_y_start + upper_h_for_shift + spacing_upper_judul if layout["wrapped_upper"] else final_y_start
+        judul_h_for_shift = 0; judul_bbox_bottom_for_shift = layout["y_judul"]
+        if layout["wrapped_judul"]:
+             judul_bbox_shift = draw.multiline_textbbox((margin_x, layout["y_judul"]), layout["wrapped_judul"], font=layout["font_judul"], spacing=4)
+             judul_h_for_shift = judul_bbox_shift[3]-judul_bbox_shift[1]
+             judul_bbox_bottom_for_shift = judul_bbox_shift[3]
+        layout["y_sub"] = judul_bbox_bottom_for_shift + spacing_judul_sub if layout["wrapped_sub"] else None
+
 
     frames = []
+    font_upper_final = layout["font_upper"]; font_judul_final = layout["font_judul"]; font_sub_final = layout["font_sub"]
+    wrapped_upper_final = layout["wrapped_upper"]; wrapped_judul_final = layout["wrapped_judul"]; wrapped_sub_final = layout["wrapped_sub"]
+    y_upper_final = layout["y_upper"]; y_judul_final = layout["y_judul"]; y_sub_final = layout["y_sub"]
+
     for i in range(total_frames):
         if i < static_frames: t = 1.0; anim = False
         elif i < static_frames + fade_frames: t = (i - static_frames) / float(fade_frames); anim = True
@@ -133,9 +197,9 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
 
         frame = Image.new("RGBA", VIDEO_SIZE, BG_COLOR + (255,))
         layer = Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0))
-        if wrapped_upper and y_upper is not None: make_text_frame(layer, wrapped_upper, font_upper, (margin_x, y_upper))
-        if wrapped_judul and y_judul is not None: make_text_frame(layer, wrapped_judul, font_judul, (margin_x, y_judul))
-        if wrapped_sub and y_sub is not None: make_text_frame(layer, wrapped_sub, font_sub, (margin_x, y_sub))
+        if wrapped_upper_final and y_upper_final is not None: make_text_frame(layer, wrapped_upper_final, font_upper_final, (margin_x, y_upper_final))
+        if wrapped_judul_final and y_judul_final is not None: make_text_frame(layer, wrapped_judul_final, font_judul_final, (margin_x, y_judul_final))
+        if wrapped_sub_final and y_sub_final is not None: make_text_frame(layer, wrapped_sub_final, font_sub_final, (margin_x, y_sub_final))
         visible = render_wipe_layer(layer, t) if anim else layer
         frame = Image.alpha_composite(frame, visible)
         frames.append(np.array(frame.convert("RGB")))
@@ -182,9 +246,7 @@ def render_penutup(dur=3.0):
     return frames_to_clip(frames)
 
 def add_overlay(base_clip):
-    if not os.path.exists(OVERLAY_FILE):
-        #print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan, video akan dibuat tanpa overlay.") # Dihapus agar log lebih bersih
-        return base_clip
+    if not os.path.exists(OVERLAY_FILE): return base_clip # Lebih singkat
     try: overlay_pil = Image.open(OVERLAY_FILE).convert("RGBA")
     except Exception as e: print(f"❌ Error loading overlay '{OVERLAY_FILE}': {e}"); return base_clip
     target_width = VIDEO_SIZE[0]; target_height = VIDEO_SIZE[1]
@@ -211,7 +273,7 @@ def baca_semua_berita(file_path):
         while i < len(lines):
             line = lines[i].strip(); lower_line = line.lower() if line else ""
             if in_isi_section: isi_raw.append(lines[i]); i += 1; continue
-            if not line and not data: i += 1; continue # Abaikan baris kosong di awal blok
+            if not line and not data: i += 1; continue
 
             current_key = None; value_part = None
             if lower_line.startswith("upper:"): current_key = "Upper"; value_part = line.split(":", 1)[1].strip()
@@ -229,7 +291,7 @@ def baca_semua_berita(file_path):
                     else: in_isi_section = True; isi_raw.append(next_line_raw); i += 1; break
                 data[current_key] = "\n".join(key_lines)
             elif line: in_isi_section = True; isi_raw.append(lines[i]); i += 1
-            else: i += 1 # Abaikan baris kosong antar header
+            else: i += 1
 
         if isi_raw:
             isi_text = "\n".join(isi_raw).strip()
@@ -240,7 +302,7 @@ def baca_semua_berita(file_path):
 
 def buat_video(data, index=None):
     judul = data.get("Judul", "")
-    print(f"▶ Membuat video: {judul}") # Log minimal
+    print(f"▶ Membuat video: {judul}")
     try:
         opening = render_opening(
             judul, data.get("Subjudul", None), FONTS,
@@ -257,8 +319,8 @@ def buat_video(data, index=None):
         final = concatenate_videoclips([opening] + isi_clips + [penutup], method="compose")
         result = add_overlay(final)
         filename = f"output_video_{index+1 if index is not None else '1'}.mp4"
-        result.write_videofile(filename, fps=FPS, codec="libx264", audio=False, logger=None, threads=4) # logger=None
-        print(f"✅ Video selesai: {filename}\n") # Log minimal
+        result.write_videofile(filename, fps=FPS, codec="libx264", audio=False, logger=None, threads=4)
+        print(f"✅ Video selesai: {filename}\n")
     except Exception as e:
         print(f"❌ Gagal membuat video untuk '{judul}': {e}")
 
@@ -270,12 +332,12 @@ if __name__ == "__main__":
             print(f"❌ File Font '{font_file}' untuk '{key}' tidak ditemukan!")
             font_files_ok = False
     if not font_files_ok: exit(1)
-    if not os.path.exists(OVERLAY_FILE):
-         print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan (akan dilewati saat pembuatan video).") # Log minimal
+    #if not os.path.exists(OVERLAY_FILE): # Komentari warning overlay agar log lebih bersih
+         #print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan (akan dilewati saat pembuatan video).")
 
     semua = baca_semua_berita(FILE_INPUT)
     if not semua: print(f"❌ Tidak ada data berita yang valid di '{FILE_INPUT}'."); exit(1)
 
-    print(f"Total {len(semua)} video akan dibuat...") # Log minimal
+    print(f"Total {len(semua)} video akan dibuat...")
     for i, data in enumerate(semua): buat_video(data, i)
-    print("🎬 Semua video selesai dibuat (atau dilewati jika gagal).") # Log minimal
+    print("🎬 Semua video selesai dibuat (atau dilewati jika gagal).")
