@@ -17,12 +17,23 @@ FONTS = {
 OVERLAY_FILE = "semangat.png"
 
 def durasi_otomatis(teks, min_dur=3.5):
-    if not teks: return min_dur
+    """
+    Durasi tampil teks: Cepat untuk pendek, sedikit lebih lama untuk menengah & panjang.
+    """
+    if not teks:
+        return min_dur
+
     kata = len(teks.split())
-    if kata <= 15: durasi = 3.5
-    elif kata <= 30: durasi = 4.5
-    elif kata <= 50: durasi = 5.5
-    else: durasi = 7.0
+
+    if kata <= 15:
+        durasi = 3.5
+    elif kata <= 30:
+        durasi = 5.0 # Sedikit lebih lama
+    elif kata <= 50:
+        durasi = 6.0 # Sedikit lebih lama
+    else:
+        durasi = 7.0 # Tetap untuk panjang
+
     return max(min_dur, round(durasi, 1))
 
 def durasi_judul(judul, subjudul):
@@ -180,6 +191,7 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
              judul_bbox_bottom_for_shift = judul_bbox_shift[3]
         layout["y_sub"] = judul_bbox_bottom_for_shift + spacing_judul_sub if layout["wrapped_sub"] else None
 
+
     frames = []
     font_upper_final = layout["font_upper"]; font_judul_final = layout["font_judul"]; font_sub_final = layout["font_sub"]
     wrapped_upper_final = layout["wrapped_upper"]; wrapped_judul_final = layout["wrapped_judul"]; wrapped_sub_final = layout["wrapped_sub"]
@@ -268,66 +280,43 @@ def baca_semua_berita(file_path):
 
         while i < len(lines):
             line = lines[i].strip(); lower_line = line.lower() if line else ""
-            current_key = None; value_part = None
 
-            # Cek jika SUDAH di ISI (logika sederhana dari parser sebelumnya yg dibuang)
-            # Jika baris tidak kosong DAN bukan keyword DAN sudah pernah proses header
             is_potential_isi = line and last_processed_header_line != -1 and not any(lower_line.startswith(k) for k in known_keys)
-            # Atau jika baris tidak kosong dan BELUM proses header (file hanya isi)
             is_potential_isi_only = line and last_processed_header_line == -1 and not any(lower_line.startswith(k) for k in known_keys)
-
             if is_potential_isi or is_potential_isi_only:
-                 isi_raw_start_index = i
-                 break # Langsung keluar loop header
+                 isi_raw_start_index = i; break
 
-            # Proses Header jika BUKAN ISI
+            current_key = None; value_part = None
             if lower_line.startswith("upper:"): current_key = "Upper"; value_part = line.split(":", 1)[1].strip()
             elif lower_line.startswith("judul:"): current_key = "Judul"; value_part = line.split(":", 1)[1].strip()
             elif lower_line.startswith("subjudul:"): current_key = "Subjudul"; value_part = line.split(":", 1)[1].strip()
 
             if current_key:
-                key_lines = [value_part] if value_part else []
-                line_index_after_key = i + 1
-                while line_index_after_key < len(lines):
-                    next_line_raw = lines[line_index_after_key]
-                    next_line_strip = next_line_raw.strip()
+                key_lines = [value_part] if value_part else []; i += 1
+                while i < len(lines):
+                    next_line_raw = lines[i]; next_line_strip = next_line_raw.strip()
                     next_line_lower = next_line_strip.lower() if next_line_strip else ""
                     is_next_keyword = any(next_line_lower.startswith(key) for key in known_keys)
 
                     if is_next_keyword: break
-                    # Baris kosong setelah teks header menandakan akhir header
-                    if not next_line_strip and key_lines:
-                         isi_raw_start_index = line_index_after_key # Mulai ISI dari baris kosong ini
-                         break
-                    elif next_line_strip: # Tambah ke header
-                        key_lines.append(next_line_strip)
-                        line_index_after_key += 1
-                    # Abaikan baris kosong jika key_lines masih kosong
-                    elif not next_line_strip and not key_lines:
-                         line_index_after_key += 1
-                    else: break # Jaga-jaga
+                    if not next_line_strip and key_lines: isi_raw_start_index = i; break
+                    elif next_line_strip: key_lines.append(next_line_strip); i += 1
+                    elif not next_line_strip and not key_lines: i += 1
+                    else: break
 
                 data[current_key] = "\n".join(key_lines)
-                last_processed_header_line = line_index_after_key - 1
-                i = line_index_after_key
-                # Jika baris kosong menandai akhir header, keluar dari loop while utama
-                if isi_raw_start_index != -1 and isi_raw_start_index == i: break 
-            else: # Abaikan baris kosong sebelum header pertama
-                i += 1
-        
-        # Kumpulkan ISI
-        isi_raw = []
-        if isi_raw_start_index != -1:
-             isi_raw = lines[isi_raw_start_index:]
+                last_processed_header_line = i - 1
+                if isi_raw_start_index != -1 and isi_raw_start_index == i: break
+            else: i += 1
 
-        # Proses ISI
+        isi_raw = []
+        if isi_raw_start_index != -1: isi_raw = lines[isi_raw_start_index:]
+
         if isi_raw:
             isi_text = "\n".join(isi_raw).strip()
             paragraf_list = [p.strip() for p in isi_text.split("\n\n") if p.strip()]
             for idx, p in enumerate(paragraf_list, start=1): data[f"Isi_{idx}"] = p
-        
         if data: semua_data.append(data)
-        
     return semua_data
 
 def buat_video(data, index=None):
@@ -362,7 +351,7 @@ if __name__ == "__main__":
             print(f"❌ File Font '{font_file}' untuk '{key}' tidak ditemukan!")
             font_files_ok = False
     if not font_files_ok: exit(1)
-    #if not os.path.exists(OVERLAY_FILE): # Komentari warning overlay
+    #if not os.path.exists(OVERLAY_FILE):
          #print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan.")
 
     semua = baca_semua_berita(FILE_INPUT)
