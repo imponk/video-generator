@@ -102,7 +102,7 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
     margin_x = 70
 
     dummy_img = Image.new("RGBA", (1, 1)); draw = ImageDraw.Draw(dummy_img)
-    font_upper = ImageFont.truetype(fonts["upper"], 24) if upper_txt else None
+    font_upper = ImageFont.truetype(fonts["upper"], 26) if upper_txt else None
     font_judul = ImageFont.truetype(fonts["judul"], 54)
     font_sub = ImageFont.truetype(fonts["subjudul"], 28) if subjudul_txt else None
 
