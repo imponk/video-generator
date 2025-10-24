@@ -125,9 +125,8 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
             sub_h = sub_bbox[3] - sub_bbox[1]
 
         total_h = upper_h + judul_h + sub_h
-        if upper_h > 0 and (judul_h > 0 or wrapped_judul): total_h += spacing_upper_judul # Add space if upper exists and judul exists (even if empty)
-        if (judul_h > 0 or wrapped_judul) and sub_h > 0: total_h += spacing_judul_sub # Add space if judul exists and sub exists
-
+        if upper_h > 0 and (judul_h > 0 or wrapped_judul): total_h += spacing_upper_judul
+        if (judul_h > 0 or wrapped_judul) and sub_h > 0: total_h += spacing_judul_sub
 
         y_start = int(VIDEO_SIZE[1] * 0.60); current_y = y_start
         _y_upper = None; _y_judul = None; _y_sub = None; _bottom_y = y_start
@@ -144,11 +143,10 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
             judul_bbox = draw.multiline_textbbox((margin_x, _y_judul), wrapped_judul, font=font_judul, spacing=4)
             judul_bbox_bottom = judul_bbox[3]
             _bottom_y = judul_bbox[3]
-        elif upper_h > 0: # If only upper, bottom is bottom of upper
+        elif upper_h > 0:
              _bottom_y = y_start + upper_h
-        # Add spacing even if judul is empty, but upper exists
         if upper_h > 0 or wrapped_judul : current_y = judul_bbox_bottom + spacing_judul_sub
-        
+
         if wrapped_sub:
             _y_sub = current_y
             sub_bbox = draw.multiline_textbbox((margin_x, _y_sub), wrapped_sub, font=font_sub, spacing=4)
@@ -163,13 +161,11 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
 
     if layout["bottom_y"] > batas_bawah_aman:
         new_judul_font_size = max(50, int(judul_font_size * 0.94))
-        #print(f"--- [INFO] Judul opening terlalu panjang, mengecilkan font ke {new_judul_font_size}pt") # Dihapus
         layout = calculate_layout(new_judul_font_size)
 
     if layout["bottom_y"] > batas_bawah_aman:
         kelebihan = layout["bottom_y"] - batas_bawah_aman
         offset = min(kelebihan + 10, 80)
-        #print(f"--- [INFO] Judul opening masih panjang, menggeser ke atas {offset}px") # Dihapus
         final_y_start -= offset
         layout["y_upper"] = final_y_start if layout["wrapped_upper"] else None
         upper_h_for_shift = 0
@@ -183,7 +179,6 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
              judul_h_for_shift = judul_bbox_shift[3]-judul_bbox_shift[1]
              judul_bbox_bottom_for_shift = judul_bbox_shift[3]
         layout["y_sub"] = judul_bbox_bottom_for_shift + spacing_judul_sub if layout["wrapped_sub"] else None
-
 
     frames = []
     font_upper_final = layout["font_upper"]; font_judul_final = layout["font_judul"]; font_sub_final = layout["font_sub"]
@@ -246,7 +241,7 @@ def render_penutup(dur=3.0):
     return frames_to_clip(frames)
 
 def add_overlay(base_clip):
-    if not os.path.exists(OVERLAY_FILE): return base_clip # Lebih singkat
+    if not os.path.exists(OVERLAY_FILE): return base_clip
     try: overlay_pil = Image.open(OVERLAY_FILE).convert("RGBA")
     except Exception as e: print(f"❌ Error loading overlay '{OVERLAY_FILE}': {e}"); return base_clip
     target_width = VIDEO_SIZE[0]; target_height = VIDEO_SIZE[1]
@@ -267,37 +262,72 @@ def baca_semua_berita(file_path):
     known_keys = ["upper:", "judul:", "subjudul:"]
 
     for blok_idx, blok in enumerate(blok_berita):
-        lines = blok.strip().splitlines(); data = {}; isi_raw = []; i = 0
-        in_isi_section = False
+        lines = blok.strip().splitlines(); data = {}; isi_raw_start_index = -1
+        i = 0
+        last_processed_header_line = -1
 
         while i < len(lines):
             line = lines[i].strip(); lower_line = line.lower() if line else ""
-            if in_isi_section: isi_raw.append(lines[i]); i += 1; continue
-            if not line and not data: i += 1; continue
-
             current_key = None; value_part = None
+
+            # Cek jika SUDAH di ISI (logika sederhana dari parser sebelumnya yg dibuang)
+            # Jika baris tidak kosong DAN bukan keyword DAN sudah pernah proses header
+            is_potential_isi = line and last_processed_header_line != -1 and not any(lower_line.startswith(k) for k in known_keys)
+            # Atau jika baris tidak kosong dan BELUM proses header (file hanya isi)
+            is_potential_isi_only = line and last_processed_header_line == -1 and not any(lower_line.startswith(k) for k in known_keys)
+
+            if is_potential_isi or is_potential_isi_only:
+                 isi_raw_start_index = i
+                 break # Langsung keluar loop header
+
+            # Proses Header jika BUKAN ISI
             if lower_line.startswith("upper:"): current_key = "Upper"; value_part = line.split(":", 1)[1].strip()
             elif lower_line.startswith("judul:"): current_key = "Judul"; value_part = line.split(":", 1)[1].strip()
             elif lower_line.startswith("subjudul:"): current_key = "Subjudul"; value_part = line.split(":", 1)[1].strip()
 
             if current_key:
-                key_lines = [value_part] if value_part else []; i += 1
-                while i < len(lines):
-                    next_line_raw = lines[i]; next_line_strip = next_line_raw.strip()
+                key_lines = [value_part] if value_part else []
+                line_index_after_key = i + 1
+                while line_index_after_key < len(lines):
+                    next_line_raw = lines[line_index_after_key]
+                    next_line_strip = next_line_raw.strip()
                     next_line_lower = next_line_strip.lower() if next_line_strip else ""
                     is_next_keyword = any(next_line_lower.startswith(key) for key in known_keys)
-                    if is_next_keyword: break
-                    elif next_line_strip: key_lines.append(next_line_strip); i += 1
-                    else: in_isi_section = True; isi_raw.append(next_line_raw); i += 1; break
-                data[current_key] = "\n".join(key_lines)
-            elif line: in_isi_section = True; isi_raw.append(lines[i]); i += 1
-            else: i += 1
 
+                    if is_next_keyword: break
+                    # Baris kosong setelah teks header menandakan akhir header
+                    if not next_line_strip and key_lines:
+                         isi_raw_start_index = line_index_after_key # Mulai ISI dari baris kosong ini
+                         break
+                    elif next_line_strip: # Tambah ke header
+                        key_lines.append(next_line_strip)
+                        line_index_after_key += 1
+                    # Abaikan baris kosong jika key_lines masih kosong
+                    elif not next_line_strip and not key_lines:
+                         line_index_after_key += 1
+                    else: break # Jaga-jaga
+
+                data[current_key] = "\n".join(key_lines)
+                last_processed_header_line = line_index_after_key - 1
+                i = line_index_after_key
+                # Jika baris kosong menandai akhir header, keluar dari loop while utama
+                if isi_raw_start_index != -1 and isi_raw_start_index == i: break 
+            else: # Abaikan baris kosong sebelum header pertama
+                i += 1
+        
+        # Kumpulkan ISI
+        isi_raw = []
+        if isi_raw_start_index != -1:
+             isi_raw = lines[isi_raw_start_index:]
+
+        # Proses ISI
         if isi_raw:
             isi_text = "\n".join(isi_raw).strip()
             paragraf_list = [p.strip() for p in isi_text.split("\n\n") if p.strip()]
             for idx, p in enumerate(paragraf_list, start=1): data[f"Isi_{idx}"] = p
+        
         if data: semua_data.append(data)
+        
     return semua_data
 
 def buat_video(data, index=None):
@@ -332,8 +362,8 @@ if __name__ == "__main__":
             print(f"❌ File Font '{font_file}' untuk '{key}' tidak ditemukan!")
             font_files_ok = False
     if not font_files_ok: exit(1)
-    #if not os.path.exists(OVERLAY_FILE): # Komentari warning overlay agar log lebih bersih
-         #print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan (akan dilewati saat pembuatan video).")
+    #if not os.path.exists(OVERLAY_FILE): # Komentari warning overlay
+         #print(f"⚠️ File Overlay '{OVERLAY_FILE}' tidak ditemukan.")
 
     semua = baca_semua_berita(FILE_INPUT)
     if not semua: print(f"❌ Tidak ada data berita yang valid di '{FILE_INPUT}'."); exit(1)
