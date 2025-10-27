@@ -26,13 +26,13 @@ def durasi_otomatis(teks, min_dur=3.5):
     kata = len(teks.split())
 
     if kata <= 15:
-        durasi = 3.5
+        durasi = 4
     elif kata <= 30:
-        durasi = 5.0 # Sedikit lebih lama
+        durasi = 5.5 # Sedikit lebih lama
     elif kata <= 50:
-        durasi = 6.0 # Sedikit lebih lama
+        durasi = 7 # Sedikit lebih lama
     else:
-        durasi = 7.0 # Tetap untuk panjang
+        durasi = 8 # Tetap untuk panjang
 
     return max(min_dur, round(durasi, 1))
 
