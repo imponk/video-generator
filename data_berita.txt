@@ -1,23 +1,16 @@
 Judul:
-Mahasiswa Unair
-Buka Posko
-Bantuan Hukum
-Subjudul:
-Dampingi Masalah Penipuan
-hingga Pertanahan di Kandangan
+Kendaraan Robot Otomatis
+Bisa Antar Belanjaan
+Sudah Dipakai di Jepang
 
-Sebanyak 21 mahasiswa Doktor Ilmu Hukum Universitas Airlangga (Unair) membuka posko bantuan hukum di kawasan Kelurahan Kandangan, Kecamatan Benowo, Surabaya pada Sabtu (25/10).
+Kendaraan robot pengantar makanan bukan lagi konsep di film fiksi ilmiah. Suzuki berkolaborasi dengan LOMBY Inc. dan minimarket Seven Eleven membuat kendaraan yang otomatis bisa mengantarkan barang belanjaan pesanan konsumen seperti sembako di minimarket.
 
-Pendirian posko didasarkan pada kebutuhan bantuan hukum oleh masyarakat saat ini. Hadirnya posko tersebut diharapkan mampu memberikan solusi bagi masyarakat yang memerlukan bantuan.
+Kendaraan bernama Lomby Autonomous (LM-A) itu telah difungsikan sejak Mei 2025. Hingga akhir Oktober ini sudah ada empat unit yang difungsikan di dua Sevel. Masing-masing dua unit. Lokasinya di daerah Minami Osawa sekitar 40 Km dari Kota Tokyo.
 
-Koordinator Program Studi S-3 Doktor Ilmu Hukum Fakultas Hukum Unair Prof Aktieva Tri Tjitrawati mengatakan, dengan kondisi hukum yang belum stabil, pengetahuan masyarakat terhadap hukum juga perlu ditingkatkan.
+CEO LOMBY Inc. Tomoharu Uchiyama menjelaskan pembuatan unit LM-A itu sebagai solusi untuk pengantaran barang. Khususnya untuk lansia yang makin banyak di Jepang. Terutama di Minami yang berbukit. Pengantaran barang secara otomatis akan memudahkan.
 
-”Oleh sebab itu, kami dorong mahasiswa untuk menggelar pengabdian yang dibutuhkan masyarakat,” jelasnya.
+Jawa Pos menyaksikan langsung kendaraan robot itu bekerja. Dia akan berhenti saat ada orang di depan. Lalu jalan pelan, maksimal 6 kilometer per jam. Radius pengantaran sekitar 2 Km. Bisa melewati tanjakan seperti jembatan penyeberangan. 
 
-Melalui penyuluhan dan kegiatan desa binaan hukum, harapannya masyarakat bisa mengakses kebutuhan legal yang dicari. ”Jadi masyarakat ada kebingungan apa, pertanyaan, bisa ke kami. Kami juga menggandeng PERADI Surabaya untuk pendampingan hukum,” jelasnya. 
+Dengan sensor dan radar yang dimilikinya bisa menyesuaikan dengan kondisi jalan. Lampu merah berhenti. Lampu hijau jalan di zebra cross.
 
-Kelurahan Kandangan sengaja dipilih menjadi kampung binaan. Karena perkembangan Surabaya yang mulai mengarah ke Surabaya Barat.
-
-”Jadi kasus-kasus tanah bisa bermunculan di sini, karena awalnya masyarakat merasa cukup dengan petok D, girik, sekarang ada hubungan dengan developer,” ucap Aktieva. Sebagai pembuka, mereka juga menggelar penyuluhan terkait pertanahan di Gedung Pandansari, Kandangan.
-
-Selain itu, ada pula kasus terkait penipuan pinjol dan kasus industrial. ”Nah, kami harap pengabdian ini bisa membantu meningkatkan edukasi masyarakat, membantu mereka mencapai keadilan,” tutur Aktieva.
+Saat ini kendaraan ini masih beroperasi terbatas. Biaya pembuatan sekitar 20 ribu Yen atau sekitar Rp 200 juta.
