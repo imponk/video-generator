@@ -328,13 +328,13 @@ def buat_video(data, index=None):
             upper_txt=data.get("Upper", None)
         )
         isi_clips = []; isi_data = [f"Isi_{i}" for i in range(1, 30) if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
-        jeda = render_penutup(0.6)
+        jeda = render_penutup(0.7)
         for idx, key in enumerate(isi_data):
             teks = data[key]; dur = durasi_otomatis(teks)
             clip = render_text_block(teks, FONTS["isi"], 34, dur)
             isi_clips.append(clip)
             if idx < len(isi_data) - 1: isi_clips.append(jeda)
-        penutup = render_penutup(3.0)
+        penutup = render_penutup(4.0)
         final = concatenate_videoclips([opening] + isi_clips + [penutup], method="compose")
         result = add_overlay(final)
         filename = f"output_video_{index+1 if index is not None else '1'}.mp4"
