@@ -1,7 +1,5 @@
 Judul:
-Kendaraan Robot Otomatis
-Bisa Antar Belanjaan
-Sudah Dipakai di Jepang
+Kendaraan Robot Otomatis Bisa Antar Belanjaan Sudah Dipakai di Jepang
 
 Kendaraan robot pengantar makanan bukan lagi konsep di film fiksi ilmiah. Suzuki berkolaborasi dengan LOMBY Inc. dan minimarket Seven Eleven membuat kendaraan yang otomatis bisa mengantarkan barang belanjaan pesanan konsumen seperti sembako di minimarket.
 
