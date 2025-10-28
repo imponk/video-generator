@@ -17,4 +17,4 @@ Jawa Pos menyaksikan langsung kendaraan robot itu bekerja. Dia akan berhenti saa
 
 Dengan sensor dan radar yang dimilikinya bisa menyesuaikan dengan kondisi jalan. Lampu merah berhenti. Lampu hijau jalan di zebra cross.
 
-Saat ini kendaraan ini masih beroperasi terbatas. Biaya pembuatan sekitar 2 juta JPY atau sekitar Rp 200 juta.
+Saat ini kendaraan ini masih beroperasi terbatas. Biaya pembuatan sekitar Rp 200 juta per unit.
