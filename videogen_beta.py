@@ -2,6 +2,13 @@ from moviepy.editor import ImageClip, CompositeVideoClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np, os, math, re
 
+from videogen_beta_patch import (
+    render_opening,
+    render_text_block,
+    render_penutup
+)
+
+
 VIDEO_SIZE = (720, 1280)
 BG_COLOR = (0, 0, 0)
 TEXT_COLOR = (255, 255, 255, 255)
