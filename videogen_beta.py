@@ -187,6 +187,14 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
     if layout["bottom_y"] > batas_bawah_aman:
         layout = calculate_layout(int(judul_font_size * 0.94))
 
+    # 🔧 Tambahan patch: jika masih terlalu rendah, geser ke atas
+    if layout["bottom_y"] > batas_bawah_aman:
+        kelebihan = layout["bottom_y"] - batas_bawah_aman
+        offset = min(kelebihan + 20, 150)
+        for key in ["y_upper", "y_judul", "y_sub"]:
+            if layout[key] is not None:
+                layout[key] -= offset
+
     def frame_generator(i):
         if i < static_frames:
             t = 1.0
