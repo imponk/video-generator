@@ -131,7 +131,7 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
     judul_font_size = 60
     sub_font_size = 28
     spacing_upper_judul = 12
-    spacing_judul_sub = 16
+    spacing_judul_sub = 19
 
     def calculate_layout(current_judul_font_size):
         font_upper = ImageFont.truetype(fonts["upper"], upper_font_size) if upper_txt else None
