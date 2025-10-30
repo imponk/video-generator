@@ -288,16 +288,16 @@ def baca_semua_berita(file_path):
         i = 0
         last_processed_header_line = -1
 
-        while i < len(lines):
-            line = lines[i].strip()
-            lower_line = line.lower() if line else ""
-            is_potential_isi = line and last any(lower_line.startswith(k) for k in known_keys)
+    while i < len(lines):
+    line = lines[i].strip()
+    lower_line = line.lower() if line else ""
 
-            is_potential_isi = line and last_processed_header_line != -1 and not any(lower_line.startswith(k) for k in known_keys)
-            is_potential_isi_only = line and last_processed_header_line == -1 and not any(lower_line.startswith(k) for k in known_keys)
-            if is_potential_isi or is_potential_isi_only:
-                isi_raw_start_index = i
-                break
+    is_potential_isi = line and last_processed_header_line != -1 and not any(lower_line.startswith(k) for k in known_keys)
+    is_potential_isi_only = line and last_processed_header_line == -1 and not any(lower_line.startswith(k) for k in known_keys)
+
+    if is_potential_isi or is_potential_isi_only:
+        isi_raw_start_index = i
+        break
 
             current_key = None
             value_part = None
