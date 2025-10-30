@@ -362,7 +362,7 @@ def buat_video(data, index=None):
         final = concatenate_videoclips([opening] + isi_clips + [penutup], method="compose")
         result = add_overlay(final)
         filename = f"output_video_{index+1 if index is not None else 1}.mp4"
-        result.write_videofile(filename, fps=FPS, codec="libx264", audio=False, logger=None, threads=4)
+result.write_videofile(filename, fps=FPS, codec="libx264", audio=False, threads=4)
         print(f"✅ Video selesai: {filename}\n")
     except Exception as e:
         print(f"❌ Gagal membuat video untuk '{judul}': {e}")
