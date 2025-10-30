@@ -359,7 +359,7 @@ def buat_video(data, index=None):
         for idx, key in enumerate(isi_data):
             teks = data[key]
             dur = durasi_otomatis(teks)
-            clip = render_text_block(teks, FONTS["isi"], 36, dur)
+            clip = render_text_block(teks, FONTS["isi"], 38, dur)
             isi_clips.append(clip)
             if idx < len(isi_data) - 1:
                 isi_clips.append(jeda)
