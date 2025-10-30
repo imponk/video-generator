@@ -3,6 +3,7 @@ from moviepy.video.VideoClip import VideoClip
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np, os, math, re
 
+# Konfigurasi dasar
 VIDEO_SIZE = (720, 1280)
 BG_COLOR = (0, 0, 0)
 TEXT_COLOR = (255, 255, 255, 255)
@@ -105,15 +106,15 @@ def render_wipe_layer(layer, t):
     draw.rectangle([0, 0, width, VIDEO_SIZE[1]], fill=255)
     return Image.composite(layer, Image.new("RGBA", VIDEO_SIZE, (0, 0, 0, 0)), mask)
 
+# ===============================
+#   STREAMING RENDER CLIPS
+# ===============================
+
 def make_clip_from_generator(frame_generator, duration):
     def make_frame(t):
         i = int(t * FPS)
         return frame_generator(i)
     return VideoClip(make_frame, duration=duration)
-
-# ===============================
-#   OPENING (judul/subjudul)
-# ===============================
 
 def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
     dur = durasi_judul(judul_txt, subjudul_txt)
@@ -130,16 +131,29 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
     judul_font_size = 60
     sub_font_size = 28
     spacing_upper_judul = 12
-    spacing_judul_sub = 19  # ← hasil penyesuaian visual
+    spacing_judul_sub = 19
 
     def calculate_layout(current_judul_font_size):
         font_upper = ImageFont.truetype(fonts["upper"], upper_font_size) if upper_txt else None
-        font_judul = ImageFont.truetype(fonts["judul"], current_judul_font_size)
+        font_judul = ImageFont.truetype(fonts["judul"], current_judul_font_size) if judul_txt else None
         font_sub = ImageFont.truetype(fonts["subjudul"], sub_font_size) if subjudul_txt else None
+        if not font_judul:
+            font_judul = ImageFont.truetype(fonts["judul"], current_judul_font_size)
 
-        wrapped_upper = smart_wrap(upper_txt, font_upper, VIDEO_SIZE[0]) if upper_txt else None
-        wrapped_judul = smart_wrap(judul_txt, font_judul, VIDEO_SIZE[0])
-        wrapped_sub = smart_wrap(subjudul_txt, font_sub, VIDEO_SIZE[0]) if subjudul_txt else None
+        wrapped_upper = smart_wrap(upper_txt, font_upper, VIDEO_SIZE[0]) if font_upper and upper_txt else None
+        wrapped_judul = smart_wrap(judul_txt, font_judul, VIDEO_SIZE[0]) if font_judul and judul_txt else ""
+        wrapped_sub = smart_wrap(subjudul_txt, font_sub, VIDEO_SIZE[0]) if font_sub and subjudul_txt else None
+
+        upper_h = judul_h = sub_h = 0
+        if wrapped_upper:
+            upper_bbox = draw.multiline_textbbox((0, 0), wrapped_upper, font=font_upper, spacing=4)
+            upper_h = upper_bbox[3] - upper_bbox[1]
+        if wrapped_judul:
+            judul_bbox = draw.multiline_textbbox((0, 0), wrapped_judul, font=font_judul, spacing=4)
+            judul_h = judul_bbox[3] - judul_bbox[1]
+        if wrapped_sub:
+            sub_bbox = draw.multiline_textbbox((0, 0), wrapped_sub, font=font_sub, spacing=4)
+            sub_h = sub_bbox[3] - sub_bbox[1]
 
         y_start = int(VIDEO_SIZE[1] * 0.60)
         current_y = y_start
@@ -153,9 +167,10 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
             bottom_y = upper_bbox[3]
 
         y_judul = current_y
-        judul_bbox = draw.multiline_textbbox((margin_x, y_judul), wrapped_judul, font=font_judul, spacing=4)
-        bottom_y = judul_bbox[3]
-        current_y = judul_bbox[3] + spacing_judul_sub
+        if wrapped_judul:
+            judul_bbox = draw.multiline_textbbox((margin_x, y_judul), wrapped_judul, font=font_judul, spacing=4)
+            bottom_y = judul_bbox[3]
+            current_y = judul_bbox[3] + spacing_judul_sub
 
         if wrapped_sub:
             y_sub = current_y
@@ -172,6 +187,7 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
     if layout["bottom_y"] > batas_bawah_aman:
         layout = calculate_layout(int(judul_font_size * 0.94))
 
+    # 🔧 Tambahan patch: jika masih terlalu rendah, geser ke atas
     if layout["bottom_y"] > batas_bawah_aman:
         kelebihan = layout["bottom_y"] - batas_bawah_aman
         offset = min(kelebihan + 20, 150)
@@ -202,10 +218,6 @@ def render_opening(judul_txt, subjudul_txt, fonts, upper_txt=None):
         return np.array(Image.alpha_composite(frame, visible).convert("RGB"))
 
     return make_clip_from_generator(frame_generator, dur)
-
-# ===============================
-#   BLOK TEKS ISI
-# ===============================
 
 def render_text_block(text, font_path, font_size, dur, anim=True):
     total_frames = int(FPS * dur)
@@ -262,10 +274,6 @@ def add_overlay(base_clip):
     overlay_clip = ImageClip(np.array(overlay_pil_resized), duration=base_clip.duration)
     return CompositeVideoClip([base_clip, overlay_clip.set_pos((0, 0))], size=VIDEO_SIZE)
 
-# ===============================
-#   INPUT DATA
-# ===============================
-
 def baca_semua_berita(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -288,19 +296,15 @@ def baca_semua_berita(file_path):
         i = 0
         last_processed_header_line = -1
 
-while i < len(lines):
-    line = lines[i].strip()
-    lower_line = line.lower() if line else ""
-
-    is_potential_isi = line and last_processed_header_line != -1 and not any(lower_line.startswith(k) for k in known_keys)
-    is_potential_isi_only = line and last_processed_header_line == -1 and not any(lower_line.startswith(k) for k in known_keys)
-
-    if is_potential_isi or is_potential_isi_only:
-        isi_raw_start_index = i
-        break
-
+        while i < len(lines):
+            line = lines[i].strip()
+            lower_line = line.lower() if line else ""
+            is_potential_isi = line and last_processed_header_line != -1 and not any(lower_line.startswith(k) for k in known_keys)
+            is_potential_isi_only = line and last_processed_header_line == -1 and not any(lower_line.startswith(k) for k in known_keys)
+            if is_potential_isi or is_potential_isi_only:
+                isi_raw_start_index = i
+                break
             current_key = None
-            value_part = None
             if lower_line.startswith("upper:"):
                 current_key = "Upper"
                 value_part = line.split(":", 1)[1].strip()
@@ -310,38 +314,26 @@ while i < len(lines):
             elif lower_line.startswith("subjudul:"):
                 current_key = "Subjudul"
                 value_part = line.split(":", 1)[1].strip()
-
-            if current_key:
-                key_lines = [value_part] if value_part else []
-                i += 1
-                while i < len(lines):
-                    next_line = lines[i].strip()
-                    lower_next = next_line.lower() if next_line else ""
-                    if any(lower_next.startswith(k) for k in known_keys):
-                        break
-                    if not next_line and key_lines:
-                        isi_raw_start_index = i
-                        break
-                    elif next_line:
-                        key_lines.append(next_line)
-                        i += 1
-                    elif not next_line and not key_lines:
-                        i += 1
-                    else:
-                        break
-
-                data[current_key] = "\n".join(key_lines)
-                last_processed_header_line = i - 1
-                if isi_raw_start_index != -1 and isi_raw_start_index == i:
-                    break
             else:
                 i += 1
+                continue
 
-        isi_raw = []
+            key_lines = [value_part] if value_part else []
+            i += 1
+            while i < len(lines):
+                next_line = lines[i].strip()
+                if any(next_line.lower().startswith(k) for k in known_keys): break
+                if not next_line and key_lines:
+                    isi_raw_start_index = i
+                    break
+                if next_line: key_lines.append(next_line)
+                i += 1
+
+            data[current_key] = "\n".join(key_lines)
+            last_processed_header_line = i - 1
+
         if isi_raw_start_index != -1:
             isi_raw = lines[isi_raw_start_index:]
-
-        if isi_raw:
             isi_text = "\n".join(isi_raw).strip()
             paragraf_list = [p.strip() for p in isi_text.split("\n\n") if p.strip()]
             for idx, p in enumerate(paragraf_list, start=1):
@@ -349,10 +341,6 @@ while i < len(lines):
         if data:
             semua_data.append(data)
     return semua_data
-
-# ===============================
-#   PEMBUATAN VIDEO
-# ===============================
 
 def buat_video(data, index=None):
     judul = data.get("Judul", "")
@@ -362,12 +350,9 @@ def buat_video(data, index=None):
             judul, data.get("Subjudul", None), FONTS,
             upper_txt=data.get("Upper", None)
         )
-
         isi_clips = []
-        isi_data = [f"Isi_{i}" for i in range(1, 30)
-                    if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
+        isi_data = [f"Isi_{i}" for i in range(1, 30) if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
         jeda = render_penutup(0.7)
-
         for idx, key in enumerate(isi_data):
             teks = data[key]
             dur = durasi_otomatis(teks)
@@ -375,31 +360,18 @@ def buat_video(data, index=None):
             isi_clips.append(clip)
             if idx < len(isi_data) - 1:
                 isi_clips.append(jeda)
-
         penutup = render_penutup(4.0)
 
-        # Tambahkan jeda dan fade lembut setelah opening
-        jeda_awal = render_penutup(0.8)
-        if isi_clips:
-            isi_clips[0] = isi_clips[0].crossfadein(0.4)
+jeda_awal = render_penutup(0.8)
+if isi_clips:
+    isi_clips[0] = isi_clips[0].crossfadein(0.4)
 
-        final = concatenate_videoclips(
-            [opening, jeda_awal] + isi_clips + [penutup],
-            method="compose"
-        )
+final = concatenate_videoclips([opening, jeda_awal] + isi_clips + [penutup], method="compose")
 
-        result = add_overlay(final)
-        filename = f"output_video_{index + 1 if index is not None else '1'}.mp4"
-        result.write_videofile(
-            filename,
-            fps=FPS,
-            codec="libx264",
-            audio=False,
-            logger=None,
-            threads=4
-        )
+result = add_overlay(final)
+        filename = f"output_video_{index+1 if index is not None else '1'}.mp4"
+        result.write_videofile(filename, fps=FPS, codec="libx264", audio=False, logger=None, threads=4)
         print(f"✅ Video selesai: {filename}\n")
-
     except Exception as e:
         print(f"❌ Gagal membuat video untuk '{judul}': {e}")
 
@@ -414,7 +386,6 @@ if __name__ == "__main__":
         if not os.path.exists(font_file):
             print(f"❌ File Font '{font_file}' untuk '{key}' tidak ditemukan!")
             font_files_ok = False
-
     if not font_files_ok:
         exit(1)
 
