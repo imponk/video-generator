@@ -288,7 +288,7 @@ def baca_semua_berita(file_path):
         i = 0
         last_processed_header_line = -1
 
-    while i < len(lines):
+while i < len(lines):
     line = lines[i].strip()
     lower_line = line.lower() if line else ""
 
