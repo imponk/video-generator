@@ -350,9 +350,12 @@ def buat_video(data, index=None):
             judul, data.get("Subjudul", None), FONTS,
             upper_txt=data.get("Upper", None)
         )
+
         isi_clips = []
-        isi_data = [f"Isi_{i}" for i in range(1, 30) if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
+        isi_data = [f"Isi_{i}" for i in range(1, 30)
+                    if f"Isi_{i}" in data and data[f"Isi_{i}"].strip()]
         jeda = render_penutup(0.7)
+
         for idx, key in enumerate(isi_data):
             teks = data[key]
             dur = durasi_otomatis(teks)
@@ -360,18 +363,31 @@ def buat_video(data, index=None):
             isi_clips.append(clip)
             if idx < len(isi_data) - 1:
                 isi_clips.append(jeda)
+
         penutup = render_penutup(4.0)
 
-jeda_awal = render_penutup(0.8)
-if isi_clips:
-    isi_clips[0] = isi_clips[0].crossfadein(0.4)
+        # Tambahkan jeda dan fade lembut setelah opening
+        jeda_awal = render_penutup(0.8)
+        if isi_clips:
+            isi_clips[0] = isi_clips[0].crossfadein(0.4)
 
-final = concatenate_videoclips([opening, jeda_awal] + isi_clips + [penutup], method="compose")
+        final = concatenate_videoclips(
+            [opening, jeda_awal] + isi_clips + [penutup],
+            method="compose"
+        )
 
-result = add_overlay(final)
-        filename = f"output_video_{index+1 if index is not None else '1'}.mp4"
-        result.write_videofile(filename, fps=FPS, codec="libx264", audio=False, logger=None, threads=4)
+        result = add_overlay(final)
+        filename = f"output_video_{index + 1 if index is not None else '1'}.mp4"
+        result.write_videofile(
+            filename,
+            fps=FPS,
+            codec="libx264",
+            audio=False,
+            logger=None,
+            threads=4
+        )
         print(f"✅ Video selesai: {filename}\n")
+
     except Exception as e:
         print(f"❌ Gagal membuat video untuk '{judul}': {e}")
 
