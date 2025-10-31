@@ -1,27 +1,14 @@
-Upper: Pengalaman dr Glen Purnomo Menimba Ilmu di Eropa 
 Judul:
-Terapkan Metode Bedah Lutut dan Pinggul Modern, Pasien Pulih dalam Hitungan Hari
+Suzuki Pamerkan
+MOGBA Prototype-02
+di Japan Mobility Show
+Subjudul:
+Robot Empat Kaki yang Bisa Dikendarai
 
-Dokter National Hospital dr Glen Purnomo berpetualangan ke berbagai negara di Eropa untuk mengikuti pelatihan pendidikan atau fellowship. Bagi Glen, momen itu tak sekadar dijadikan kesempatan menambah pengalaman, namun dia juga membawa oleh-oleh yaitu metode bedah lutut dan pinggul modern ke Indonesia.
+MOGBA Prototype-02 buatan Suzuki mampu naik tangga berkat empat ‘kaki’ yang dimilikinya. Meskipun miring saat menanjak, tapi moda berbasis listrik ini diklaim mampu membuat pengendaranya tetap stabil di jok kendaraan. 
 
-Pengalaman mengikuti pendidikan di luar negeri itu bermula setelah Glen lulus sebagai dokter terbaik dari Fakultas Kedokteran Universitas Hang Tuah (FK UHT) Surabaya.
+Purwarupa yang dipamerkan di Japan Mobility Show 2025 punya dudukan seperti sepeda motor. Pengendara pegang stang motor dan mengontrol laju melalui tombol. Seperti lari atau jalan dengan maksimal 6 Km/jam.
 
-Lalu, dia melanjutkan pendidikan spesialis ortopedi di Philippine Orthopedic Center, salah satu pusat ortopedi terkemuka di Asia Tenggara. Di tempat itu, Glen menempati peringkat pertama nasional dalam ujian in-training examination se-Filipina.
+Model awal diperkenalkan pada 2023, lalu tahun ini disempurnakan setelah mendapatkan berbagai saran dari masyarakat. Namun, tujuan awalnya tetap sama. Kelak akan memudahkan mobilitas warga terutama untuk naik turun tangga dan daerah berbukit.
 
-Capaian itu membuka pintu kesempatan lainnya. Glen lolos seleksi Hip & Knee Arthroplasty Fellowship di LMU Klinikum Großhadern, Munchen, Jerman, setelah melalui proses seleksi ketat. 
-
-Selama pelatihan, Glen ikut menangani ratusan operasi pinggul dan lutut di bawah bimbingan para ahli arthroplasty terkemuka di Jerman. Setiap hari, dia dipercaya memegang instrumen, mencatat teknik, dan menyerap filosofi presisi tanpa kompromi.
-
-”Bisa belajar langsung di ruang operasi yang menangani ratusan kasus adalah pengalaman luar biasa,” kenangnya.
-
-Dari Jerman, Glen belajar di Singapore General Hospital tentang Kinematic Alignment dan ERAS (Enhanced Recovery After Surgery) untuk TKR/UKA. Itu adalah metode yang menyesuaikan sudut alami tubuh setiap pasien agar hasil operasi lebih natural dan pemulihan berlangsung jauh lebih cepat.
-
-Dari ratusan pasien yang ditangani, Glen melihat konsep personalized alignment memberi dampak signifikan terhadap kenyamanan pasien pascaoperasi. ”Di sana saya benar-benar belajar bahwa detail sekecil apa pun bisa menentukan hasil pemulihan pasien,” paparnya.
-
-Kembali ke Jerman, dia mempelajari muscle-sparing Total Hip Replacement (THR) atau teknik inovatif penggantian pinggul tanpa pemotongan otot di OCM Munchen bersama Prof Robert Hube. Setelah itu, dia ke Prancis.
-
-Tahun ini dia akan menuntaskan Orthoregeneration Fellowship di Poznań, Polandia, mempelajari terapi regeneratif tulang rawan terkini untuk sendi lutut. ”Saya belajar bahwa pasien di manapun punya harapan yang sama ingin sembuh cepat dan kembali aktif,” ujar Glen.
-
-Sepulang ke Indonesia, bersama tim ortopedi, Glen menerapkan konsep ERAS (Enhanced Recovery After Surgery) yang memungkinkan pasien cepat berjalan, cepat pulang, dan cepat kembali beraktivitas tanpa harus bergantung pada teknologi robotik yang mahal.
-
-Metode itu sekarang menjadi standar baru dalam operasi lutut dan pinggul di rumah sakit National Hospital. Hasilnya, banyak pasien pulih hanya dalam hitungan hari.
+Engineer prototype tersebut mengungkap bahwa bagian atas bisa diganti sesuai keperluan. Seperti berbentuk kursi, bahkan brankar untuk mengangkut orang.
